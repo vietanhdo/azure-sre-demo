@@ -5,33 +5,38 @@ The **Azure SRE Autonomous Operations Demo** is designed using Microsoft Azure's
 ## High-Level Diagram
 
 ```mermaid
-graph TD
-    User([User / Load Test]) -->|HTTPS| ACA[Azure Container Apps]
+C4Container
+    title System Architecture - Azure SRE Autonomous Operations
     
-    subgraph Azure Container Apps
-        Backend[Go API Service]
-        Frontend[React SPA Dashboard]
-    end
+    Person(user, "User / Load Test", "Simulates traffic to the platform")
     
-    Backend -->|OTLP Traces & Metrics| AppInsights[Application Insights]
-    Backend -->|JSON Logs| LAW[Log Analytics Workspace]
+    System_Boundary(aca, "Azure Container Apps") {
+        Container(backend, "Go API Service", "Go 1.22", "Handles core API logic and fault endpoints")
+        Container(frontend, "React SPA Dashboard", "Vite", "Visualizes real-time metrics and split")
+    }
     
-    subgraph Observability
-        AppInsights --> LAW
-        LAW --> Grafana[Azure Managed Grafana]
-        LAW --> Alerts[Azure Monitor Alerts]
-    end
+    System_Boundary(obs, "Observability") {
+        System(appinsights, "Application Insights", "Ingests OTLP traces & metrics")
+        SystemDb(law, "Log Analytics Workspace", "Stores JSON logs and system events")
+        System(grafana, "Managed Grafana", "Visualizes SLIs and metrics")
+        System(alerts, "Azure Monitor Alerts", "Monitors SLOs and triggers actions")
+    }
     
-    subgraph SRE Automation
-        Alerts -->|Webhook| LogicApp[Logic App / Azure SRE Agent]
-        LogicApp -->|Notification & RCA| Telegram[Telegram SRE Channel]
-        LogicApp -.->|Auto-rollback| ACA
-    end
+    System_Boundary(sre, "SRE Automation") {
+        System(logicapp, "Logic App / SRE Agent", "Auto-RCA and remediation orchestrator")
+        System(telegram, "Telegram", "SRE incident notification channel")
+    }
     
-    subgraph CI/CD
-        GH[GitHub Actions] -->|Docker Push| ACR[Azure Container Registry]
-        ACR -->|Image Pull| ACA
-    end
+    Rel(user, aca, "HTTPS", "Traffic")
+    Rel(frontend, backend, "HTTPS", "API Calls")
+    Rel(backend, appinsights, "OTLP", "Traces & Metrics")
+    Rel(backend, law, "JSON", "Logs")
+    Rel(appinsights, law, "Export")
+    Rel(law, grafana, "KQL", "Queries")
+    Rel(law, alerts, "KQL", "Evaluation")
+    Rel(alerts, logicapp, "Webhook", "Triggers")
+    Rel(logicapp, telegram, "Message", "Notifies")
+    Rel(logicapp, aca, "REST", "Auto-rollback")
 ```
 
 ## Core Components

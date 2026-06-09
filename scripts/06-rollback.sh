@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+source "$(dirname \"$0\")/common.sh"
 set -euo pipefail
 
 GREEN='\033[0;32m'
