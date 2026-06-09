@@ -1,101 +1,99 @@
-# Azure SRE Agent - Portal Setup & Configuration Guide
+# Azure SRE Agent: Official Portal Setup Guide
 
-In this demo, the **Azure SRE Agent** is implemented as an **Autonomous Runbook** using a combination of **Azure Logic Apps (Standard/Consumption)** and **Azure OpenAI**. This acts as the "brain" that receives alerts, gathers evidence, performs Root Cause Analysis (RCA), and executes auto-remediation.
+This guide walks you through setting up the **official Microsoft Azure SRE Agent** via the Azure Portal. This setup connects the SRE Agent to your Git repositories, enables pipeline log analysis, and integrates with Azure Container Apps (ACA) logs via Azure Monitor to achieve an autonomous, self-healing architecture.
 
-This guide walks you through setting up the Agent directly on the Azure Portal.
+## Prerequisites
 
----
-
-## 🏗️ Prerequisites
-Before starting, ensure you have the following ready:
-1. **Azure OpenAI Resource:** Deployed with a `gpt-4o` or `gpt-4-turbo` model. Note the Endpoint and API Key.
-2. **GitHub Personal Access Token (PAT):** Must have `repo` read access to scan source code and workflow runs.
-3. **Telegram Bot Token & Chat ID:** Created via BotFather on Telegram.
-4. **Log Analytics Workspace (LAW) & ACA Environment:** Deployed via our Terraform scripts.
+1. **Azure Subscription** with permissions to create resources.
+2. **Azure SRE Agent** enabled in your region/tenant.
+3. **GitHub Repository** (or Azure DevOps) containing your source code and CI/CD pipelines.
+4. **Log Analytics Workspace** connected to your Azure Container Apps.
 
 ---
 
-## Step 1: Create the Logic App & System Identity
-The Logic App serves as the orchestrator. It needs an Identity to securely access other Azure resources (Zero Trust approach).
+## Phase 1: Provisioning the Azure SRE Agent
 
-1. Go to the Azure Portal -> **Logic Apps** -> **Add**.
-2. Select your Resource Group (`rg-sre-demo`) and choose **Consumption** plan (cost-optimized for event-driven execution).
-3. Once created, go to **Identity** (under Settings).
-4. Turn on **System assigned managed identity** and save.
-
-## Step 2: Grant Permissions (RBAC)
-The SRE Agent needs to query logs and perform rollbacks. Assign the following roles to the Logic App's Managed Identity:
-1. Go to your **Log Analytics Workspace** -> **Access control (IAM)** -> Add Role Assignment.
-   - Role: **Log Analytics Reader**
-   - Assign to: Managed Identity -> Your Logic App.
-2. Go to your **Azure Container App** (`ca-sre-backend`) -> **Access control (IAM)**.
-   - Role: **Contributor** (Needed to execute `az containerapp ingress traffic set` via REST API for rollback).
-
-## Step 3: Build the Logic App Workflow
-Open the **Logic App Designer** and build the following sequence:
-
-### 1. Trigger: HTTP Request
-- Use the **"When a HTTP request is received"** trigger.
-- This provides a Webhook URL. Copy this URL (you will need it for the Azure Monitor Action Group).
-- Define the JSON schema to match the Azure Monitor Alert payload (AlertContext).
-
-### 2. Action: Query Log Analytics Workspace
-- Add action: **Azure Monitor Logs -> Run query and list results**.
-- **Query:** Connect it to the `cae-sre-demo` workspace.
-- **KQL:** Inject the dynamic query to pull recent exceptions.
-  ```kusto
-  ContainerAppConsoleLogs_CL
-  | where TimeGenerated > ago(10m)
-  | where Log_Level_s == "ERROR" or Log_Message_s contains "OOMKilled"
-  | project TimeGenerated, TraceId_s, Log_Message_s
-  ```
-
-### 3. Action: Query GitHub API (Evidence Gathering)
-- Add action: **HTTP**.
-- **Method:** GET
-- **URI:** `https://api.github.com/repos/vietanhdo/azure-sre-demo/contents/apps/backend/handlers/fault.go` (or dynamically passed from logs).
-- **Headers:** 
-  - `Authorization`: `Bearer <YOUR_GITHUB_PAT>`
-  - `Accept`: `application/vnd.github.v3+json`
-
-### 4. Action: Azure OpenAI (The "Brain")
-- Add action: **HTTP** (Calling Azure OpenAI REST API).
-- **URI:** `<Your-OpenAI-Endpoint>/openai/deployments/gpt-4o/chat/completions?api-version=2024-02-15-preview`
-- **Headers:** `api-key: <Your-OpenAI-Key>`
-- **Body:** Pass a system prompt defining its Persona (SRE Expert), and the context: The errors from LAW + The Source Code from GitHub. Ask it to output a JSON object containing `incident_id`, `root_cause`, and `suggested_action`.
-
-### 5. Action: Telegram Notification
-- Add action: **HTTP**.
-- **Method:** POST
-- **URI:** `https://api.telegram.org/bot<YOUR_BOT_TOKEN>/sendMessage`
-- **Body:** Send the formatted RCA summary from OpenAI to your `<CHAT_ID>`.
-
-### 6. Action: Auto-Remediation (ACA Rollback)
-- Add a **Condition** check: If OpenAI's JSON response `auto_remediated` == `true`.
-- Add action: **HTTP** (Calling Azure Resource Manager REST API).
-- **Method:** PUT
-- **URI:** `https://management.azure.com/subscriptions/{subId}/resourceGroups/rg-sre-demo/providers/Microsoft.App/containerApps/ca-sre-backend?api-version=2023-05-01`
-- **Authentication:** Select **Managed Identity**.
-- **Body:** Send the payload to set the ingress traffic weight back to `latestRevision: true` with 100% weight, effectively reverting the Canary.
-
-## Step 4: Link to Azure Monitor Alert
-Finally, connect the telemetry to the brain.
-1. Go to **Azure Monitor** -> **Alerts** -> **Action Groups**.
-2. Create an Action Group named `ag-sre-agent`.
-3. In **Actions**, select **Webhook** and paste the URL from your Logic App Trigger.
-4. Ensure your alert rule (e.g., HTTP 5xx Rate > 5%) is configured to trigger this Action Group.
+1. Log in to the **[Azure Portal](https://portal.azure.com)**.
+2. In the global search bar, type **Azure SRE Agent** and select it from the services list.
+3. Click **Create** or **Get Started**.
+4. Fill in the basics:
+   - **Subscription**: Select your target subscription.
+   - **Resource Group**: Select `rg-sre-demo` (or create a new one).
+   - **Name**: `sre-agent-demo` (or similar).
+   - **Region**: Choose a supported region.
+5. Click **Review + create** and then **Create**.
+   > **Note**: When you create an agent, Azure automatically provisions an Application Insights instance, a Log Analytics workspace, and a Managed Identity for the agent.
 
 ---
 
-## ⚠️ Gap Analysis: What are we missing for a 100% Demo?
+## Phase 2: Connecting to Source Control & Pipelines (GitHub)
 
-Everything is fundamentally in place, but to make the demo flawlessly execute live, please verify the following:
+To allow the SRE Agent to perform root cause analysis (RCA) on bad deployments, it needs access to your source code and GitHub Actions pipeline logs.
 
-1. **Azure OpenAI Provisioning:** 
-   Have you created the Azure OpenAI instance and deployed the `gpt-4o` model? The Terraform scripts do not provision this due to quota complexities in subscriptions. **(Reminder: You need to do this manually or via a separate script).**
-2. **Secrets Management:** 
-   In a true production environment, the GitHub PAT and Telegram Bot Token should not be pasted directly into the Logic App HTTP Action. They should be stored in **Azure Key Vault**. You may want to add a Key Vault retrieval step in the Logic App for maximum "Platform Engineer" credibility.
-3. **Pipeline Logs Context (Optional but powerful):**
-   You mentioned reading pipeline logs. In Step 3 (GitHub Integration), you can add an extra HTTP action to query GitHub Actions API: `GET /repos/{owner}/{repo}/actions/runs/{run_id}/logs` to feed the LLM with the deployment logs if the failure happened immediately after a pipeline run.
-4. **Logic App ARM Template (IaC):**
-   Currently, the guide shows how to set it up manually via Portal for visual effect. For 100% IaC completeness, we could export the Logic App as an ARM/Bicep template and include it in our Terraform. Do you want me to write the Terraform module for the Logic App as well?
+1. Navigate to your newly created **Azure SRE Agent** resource in the Portal.
+2. In the left navigation menu, go to **Integrations**.
+3. Under the **Source control and CI/CD** section, select **GitHub**.
+4. Click **Connect** or **Add Integration**.
+5. Authenticate via OAuth or provide a **Personal Access Token (PAT)** with `repo` and `workflow` scopes.
+6. Select your target repository (e.g., `vietanhdo/azure-sre-demo`).
+7. **Pipeline Logs**: Ensure the integration settings check the box to allow the agent to read **Actions / Workflow Runs**. This grants the agent permission to read pipeline logs when an incident is triggered.
+
+---
+
+## Phase 3: Integrating Observability (ACA Logs)
+
+The SRE Agent needs to read your Azure Container Apps logs to detect exceptions, OOMs, and high latency.
+
+1. In the SRE Agent menu, go to **Integrations** > **Monitoring and observability**.
+2. Select **Azure Monitor** (and/or Log Analytics).
+3. The SRE Agent leverages its **Managed Identity** to query metrics and logs. Ensure the SRE Agent's managed identity has the **Monitoring Reader** and **Log Analytics Reader** roles on your ACA's Log Analytics Workspace.
+4. **Test the Connection**: In the SRE Agent interface, you can try querying Kusto (KQL) directly. For example:
+   ```kusto
+   ContainerAppConsoleLogs_CL
+   | where TimeGenerated > ago(1h)
+   | where Log_s contains "Exception" or Log_s contains "Error"
+   ```
+
+---
+
+## Phase 4: Building a Custom Subagent & Workflow
+
+To perfectly fit the demo scenario (detecting an issue, analyzing logs, and rolling back), we will build a custom workflow using SRE Agent's subagents.
+
+1. Go to the **Agent Builder** or **Subagents** tab in the SRE Agent portal.
+2. Click **Create subagent**.
+3. **Name**: `ACA-Incident-Responder`.
+4. **Instructions**: Provide natural language instructions for the agent. Example:
+   > "You are an SRE Subagent responsible for monitoring Azure Container Apps. When an Azure Monitor Alert fires for high error rates:
+   > 1. Query the Log Analytics workspace for the exact application exceptions.
+   > 2. Check the GitHub integration for the latest workflow run logs to see what was recently deployed.
+   > 3. Analyze the source code changes from the latest commit.
+   > 4. Summarize the Root Cause Analysis (RCA).
+   > 5. Suggest or execute a rollback by updating the ACA traffic split back to the stable revision."
+5. **Tools / Integrations**: Attach the **Azure Monitor**, **GitHub**, and **Azure CLI / ARM REST** tools to this subagent so it has the permissions to execute the plan.
+6. Save the subagent.
+
+---
+
+## Phase 5: Handling an Incident (End-to-End Demo Flow)
+
+1. **Trigger an Alert**: Go to your Azure Monitor Alerts and ensure an alert rule is set up to fire when the ACA HTTP 500 rate spikes.
+2. **Route to SRE Agent**: Configure the Alert Processing Rule / Action Group to route the incident to the Azure SRE Agent.
+3. **Execution**:
+   - The alert triggers the SRE Agent.
+   - SRE Agent uses the `ACA-Incident-Responder` subagent.
+   - It fetches the ACA logs via Log Analytics.
+   - It fetches the GitHub Action pipeline logs via the GitHub integration.
+   - It correlates the bad commit with the error logs.
+   - *Optional*: It posts the RCA to an Incident Management tool (like ServiceNow/PagerDuty) or triggers a webhook to your Telegram.
+4. **Review / Auto-Heal**: Depending on your configuration, the agent will either ask for human approval ("Human-in-the-loop") or automatically execute the Azure CLI command to roll back the ACA revision.
+
+---
+
+### ⚠️ Gap Analysis for the Demo
+
+If you are transitioning your demo from a custom Logic App to the official Azure SRE Agent, keep these points in mind:
+
+1. **Product Availability**: Ensure Azure SRE Agent is available in your subscription/tenant. It may still be in preview depending on your region.
+2. **Telegram Integration**: The official Azure SRE Agent has native integrations for ServiceNow, PagerDuty, and Azure Monitor Alerts. To send a message to Telegram, you might need to use a custom **Model Context Protocol (MCP)** server or an Azure Function webhook triggered by the agent.
+3. **Human-in-the-loop vs Autonomous**: SRE Agent strongly supports human oversight. For the demo, you can show the SRE Agent's UI where it explains the RCA timeline and proposes the mitigation, and you simply click "Approve" to let it roll back ACA.
