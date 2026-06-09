@@ -27,7 +27,8 @@ C4Container
         System(telegram, "Telegram", "SRE incident notification channel")
     }
     
-    Rel(user, aca, "HTTPS", "Traffic")
+    Rel(user, frontend, "HTTPS", "Traffic")
+    Rel(user, backend, "HTTPS", "API Traffic")
     Rel(frontend, backend, "HTTPS", "API Calls")
     Rel(backend, appinsights, "OTLP", "Traces & Metrics")
     Rel(backend, law, "JSON", "Logs")
@@ -36,7 +37,7 @@ C4Container
     Rel(law, alerts, "KQL", "Evaluation")
     Rel(alerts, logicapp, "Webhook", "Triggers")
     Rel(logicapp, telegram, "Message", "Notifies")
-    Rel(logicapp, aca, "REST", "Auto-rollback")
+    Rel(logicapp, backend, "REST", "Auto-rollback")
 ```
 
 ## Core Components
