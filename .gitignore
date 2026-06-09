@@ -1,0 +1,37 @@
+# Demo Presentation
+presentation.html
+
+# Mac
+.DS_Store
+
+# Node/React
+node_modules/
+dist/
+build/
+.env
+.env.local
+
+# Go
+/apps/backend/backend
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfvars
+*.tfvars.json
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc

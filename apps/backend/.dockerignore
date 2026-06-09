@@ -1,0 +1,10 @@
+# Exclude everything not needed for the Go build.
+# This minimizes Docker build context and prevents leaking secrets.
+.git
+.gitignore
+.dockerignore
+Dockerfile
+README.md
+*.md
+.env
+.env.*

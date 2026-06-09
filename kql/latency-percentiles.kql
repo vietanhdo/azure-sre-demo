@@ -1,0 +1,13 @@
+// P50, P95, P99 latency by revision over the last 1 hour
+ContainerAppConsoleLogs_CL
+| where TimeGenerated > ago(1h)
+| where Log_s has "HTTP Request"
+| extend parsedLog = parse_json(Log_s)
+| extend DurationMs = toreal(parsedLog.duration) / 1000000 // Convert ns to ms
+| extend Revision = RevisionName_s
+| summarize 
+    P50 = percentiles(DurationMs, 50),
+    P95 = percentiles(DurationMs, 95),
+    P99 = percentiles(DurationMs, 99)
+    by Revision, bin(TimeGenerated, 1m)
+| render timechart title="Latency Percentiles by Revision (ms)"

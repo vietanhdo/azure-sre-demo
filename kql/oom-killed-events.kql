@@ -1,0 +1,6 @@
+// Find OOMKilled events (exit code 137) in system logs
+ContainerAppSystemLogs_CL
+| where TimeGenerated > ago(24h)
+| where Log_s has "OOMKilled" or Log_s has "exit code 137"
+| project TimeGenerated, ContainerAppName_s, RevisionName_s, Log_s
+| order by TimeGenerated desc

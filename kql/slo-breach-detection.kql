@@ -1,0 +1,15 @@
+// Detect when error rate exceeds 5% threshold in 5-minute windows
+ContainerAppConsoleLogs_CL
+| where TimeGenerated > ago(1h)
+| where Log_s has "HTTP Request"
+| extend parsedLog = parse_json(Log_s)
+| extend Status = toint(parsedLog.status)
+| extend Revision = RevisionName_s
+| summarize 
+    TotalRequests = count(),
+    ErrorRequests = countif(Status >= 500)
+    by Revision, bin(TimeGenerated, 5m)
+| extend ErrorRate = (toreal(ErrorRequests) / TotalRequests) * 100
+| where ErrorRate > 5.0
+| project TimeGenerated, Revision, ErrorRate, TotalRequests, ErrorRequests
+| order by TimeGenerated desc

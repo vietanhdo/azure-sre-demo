@@ -1,0 +1,14 @@
+// Compare HTTP 5xx rate between revisions over the last 1 hour
+ContainerAppConsoleLogs_CL
+| where TimeGenerated > ago(1h)
+| where Log_s has "HTTP Request"
+| extend parsedLog = parse_json(Log_s)
+| extend Status = toint(parsedLog.status)
+| extend Revision = RevisionName_s
+| summarize 
+    TotalRequests = count(),
+    ErrorRequests = countif(Status >= 500)
+    by Revision, bin(TimeGenerated, 1m)
+| extend ErrorRate = round((toreal(ErrorRequests) / TotalRequests) * 100, 2)
+| project TimeGenerated, Revision, ErrorRate
+| render timechart title="HTTP 5xx Error Rate by Revision (%)"

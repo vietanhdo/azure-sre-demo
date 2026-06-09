@@ -1,0 +1,22 @@
+// Side-by-side comparison of stable vs canary (requests, errors, latency, restarts)
+let metrics = ContainerAppConsoleLogs_CL
+| where TimeGenerated > ago(1h)
+| where Log_s has "HTTP Request"
+| extend parsedLog = parse_json(Log_s)
+| extend Status = toint(parsedLog.status)
+| extend DurationMs = toreal(parsedLog.duration) / 1000000
+| extend Revision = RevisionName_s
+| summarize 
+    TotalRequests = count(),
+    ErrorRate = round((toreal(countif(Status >= 500)) / count()) * 100, 2),
+    P95Latency = round(percentiles(DurationMs, 95), 2)
+    by Revision;
+let restarts = ContainerAppSystemLogs_CL
+| where TimeGenerated > ago(1h)
+| where Log_s has "restarted" or Log_s has "OOMKilled"
+| summarize Restarts = count() by Revision = RevisionName_s;
+metrics
+| join kind=leftouter restarts on Revision
+| extend Restarts = iff(isnull(Restarts), 0, Restarts)
+| project Revision, TotalRequests, ErrorRate, P95Latency, Restarts
+| order by Revision asc

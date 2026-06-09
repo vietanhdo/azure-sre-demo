@@ -1,0 +1,43 @@
+name: Rollback Traffic
+
+on:
+  workflow_dispatch:
+
+env:
+  RG_NAME: "rg-sre-demo"
+  APP_NAME: "ca-sre-backend"
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          
+      - name: Rollback to Stable
+        run: |
+          # Find stable revision
+          STABLE_REV=$(az containerapp revision list -n ${{ env.APP_NAME }} -g ${{ env.RG_NAME }} --query "[?contains(name, 'stable')].name | [0]" -o tsv)
+          
+          echo "Rolling back traffic to 100% on $STABLE_REV"
+          az containerapp ingress traffic set \
+            --name ${{ env.APP_NAME }} \
+            --resource-group ${{ env.RG_NAME }} \
+            --revision-weight ${STABLE_REV}=100 \
+            --label-weight stable=100
+            
+      - name: Deactivate Canary
+        run: |
+          CANARY_REVS=$(az containerapp revision list -n ${{ env.APP_NAME }} -g ${{ env.RG_NAME }} --query "[?contains(name, 'canary')].name" -o tsv)
+          for rev in $CANARY_REVS; do
+              echo "Deactivating $rev"
+              az containerapp revision deactivate --name ${{ env.APP_NAME }} --resource-group ${{ env.RG_NAME }} --revision $rev
+          done
