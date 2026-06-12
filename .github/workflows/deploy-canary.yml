@@ -9,9 +9,9 @@ on:
         default: '20'
 
 env:
-  ACR_NAME: "acrsredemo"
-  RG_NAME: "rg-sre-demo"
-  APP_NAME: "ca-sre-backend"
+  ACR_NAME: "crsredemodemosea"
+  RG_NAME: "rg-sre-demo-demo-sea"
+  APP_NAME: "ca-sre-demo-demo-sea-backend"
 
 permissions:
   id-token: write

@@ -7,8 +7,10 @@ on:
     branches: [ "main" ]
 
 env:
-  ACR_NAME: "acrsredemo"
-  RG_NAME: "rg-sre-demo"
+  ACR_NAME: "crsredemodemosea"
+  RG_NAME: "rg-sre-demo-demo-sea"
+  BACKEND_APP_NAME: "ca-sre-demo-demo-sea-backend"
+  FRONTEND_APP_NAME: "ca-sre-demo-demo-sea-frontend"
 
 permissions:
   id-token: write
@@ -53,6 +55,10 @@ jobs:
         working-directory: ./apps/backend
         run: docker build -t ${{ env.ACR_NAME }}.azurecr.io/backend:${{ github.sha }} .
         
+      - name: Build Frontend Image
+        working-directory: ./apps/frontend
+        run: docker build -t ${{ env.ACR_NAME }}.azurecr.io/frontend:${{ github.sha }} .
+        
       - name: Run Trivy Vulnerability Scanner
         uses: aquasecurity/trivy-action@master
         with:
@@ -63,7 +69,22 @@ jobs:
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
           
-      - name: Push to ACR
+      - name: Push Images to ACR
         run: |
           az acr login --name ${{ env.ACR_NAME }}
           docker push ${{ env.ACR_NAME }}.azurecr.io/backend:${{ github.sha }}
+          docker push ${{ env.ACR_NAME }}.azurecr.io/frontend:${{ github.sha }}
+
+      - name: Deploy Backend to ACA
+        run: |
+          az containerapp update \
+            --name ${{ env.BACKEND_APP_NAME }} \
+            --resource-group ${{ env.RG_NAME }} \
+            --image ${{ env.ACR_NAME }}.azurecr.io/backend:${{ github.sha }}
+
+      - name: Deploy Frontend to ACA
+        run: |
+          az containerapp update \
+            --name ${{ env.FRONTEND_APP_NAME }} \
+            --resource-group ${{ env.RG_NAME }} \
+            --image ${{ env.ACR_NAME }}.azurecr.io/frontend:${{ github.sha }}
