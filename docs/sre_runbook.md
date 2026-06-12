@@ -109,3 +109,36 @@ ContainerAppConsoleLogs_CL
 1. Investigate application logs in Application Insights to identify any slow database queries or infinite loops.
 2. Verify that KEDA HTTP autoscaling rules are scaling the replicas appropriately (up to max replicas).
 3. If memory leaks are detected (e.g., OOMKilled exit code 137), recommend fixing the memory allocation in the Go code before arbitrarily increasing container resource limits.
+
+---
+
+## 4. Active Attack & Service Degradation (HTTP 500 Spikes)
+**Symptom:** A sudden, massive spike of `500 Internal Server Error` responses, often correlated with a load test or a recent deployment of a Canary revision.
+
+**Agent Investigation Protocol:**
+1. Execute the following KQL query to confirm the error rate and isolate the impacted revision:
+```kusto
+ContainerAppConsoleLogs_CL
+| where TimeGenerated > ago(10m)
+| where ContainerAppName_s == "ca-sre-demo-demo-sea-backend" 
+| where Log_s contains "error" or Log_s contains "500"
+| summarize ErrorCount=count() by RevisionName_s, bin(TimeGenerated, 1m)
+| order by TimeGenerated desc
+```
+2. Identify if the errors are exclusive to the `canary` revision or affecting the `stable` revision.
+3. Cross-reference the logs with recent GitHub Actions deployments to find the Root Cause (e.g., "Fault injection logic deployed in recent PR").
+
+**Auto-Remediation & Rollback Plan (Action Required):**
+As the Azure SRE Agent, your primary goal during an active degradation is to **protect the user experience**. Do NOT wait for a human developer to fix the code.
+
+1. **Immediate Rollback via ACA Traffic Split:**
+   - Propose an immediate rollback of the Canary deployment.
+   - Command to execute (via Azure CLI tool): 
+     ```bash
+     az containerapp ingress traffic set --name ca-sre-demo-demo-sea-backend --resource-group rg-sre-demo-demo-sea --label-weight stable=100 canary=0
+     ```
+2. **Notification & RCA:**
+   - Draft a Root Cause Analysis (RCA) report explaining that the Canary revision was compromised/faulty.
+   - Suggest notifying the team via the Microsoft Teams integration.
+3. **Secondary Mitigation (If Rollback is unavailable):**
+   - If the issue is caused by the built-in fault injection endpoint, call the disable endpoint: `POST /fault/error/disable` on the impacted service.
