@@ -1,10 +1,13 @@
 package middleware
 
 import (
+	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
 
+	"github.com/azure-sre-demo/backend/telemetry"
+	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -51,6 +54,15 @@ func Logging(next http.Handler) http.Handler {
 		traceID := ""
 		if spanContext.HasTraceID() {
 			traceID = spanContext.TraceID().String()
+		}
+
+		// Track in Application Insights
+		if telemetry.AppInsightsClient != nil {
+			reqTelemetry := appinsights.NewRequestTelemetry(r.Method, r.URL.Path, duration, fmt.Sprintf("%d", observer.status))
+			reqTelemetry.Success = observer.status >= 200 && observer.status < 400
+			reqTelemetry.Id = traceID
+			reqTelemetry.Tags.Operation().SetId(traceID)
+			telemetry.AppInsightsClient.Track(reqTelemetry)
 		}
 
 		// Use structured logging

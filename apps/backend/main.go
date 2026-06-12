@@ -38,18 +38,23 @@ func main() {
 	}))
 	slog.SetDefault(logger)
 
-	// 2. Initialize OpenTelemetry
+	// 2. Initialize OpenTelemetry & Application Insights
 	ctx := context.Background()
-	shutdown, err := telemetry.InitTelemetry(ctx, "ca-sre-backend", Version)
+	shutdownOTel, err := telemetry.InitTelemetry(ctx, "ca-sre-backend", Version)
 	if err != nil {
 		slog.Error("Failed to initialize OpenTelemetry", "error", err)
-	} else {
-		defer func() {
-			if err := shutdown(ctx); err != nil {
+	}
+	
+	shutdownAppInsights := telemetry.InitAppInsights()
+
+	defer func() {
+		if shutdownOTel != nil {
+			if err := shutdownOTel(ctx); err != nil {
 				slog.Error("Failed to shutdown OpenTelemetry", "error", err)
 			}
-		}()
-	}
+		}
+		shutdownAppInsights()
+	}()
 
 	// 3. Setup Routes
 	mux := http.NewServeMux()
