@@ -60,13 +60,19 @@ Provide RTO/RPO estimates, backup strategies, and failover procedures using Azur
 **Symptom:** GitHub Actions workflow fails at the `Run Trivy Vulnerability Scanner` step.
 **Context:** DevSecOps policy prohibits deploying images with `HIGH` or `CRITICAL` vulnerabilities.
 **Root Cause:** Base Docker image (e.g., `distroless`) contains OS-level vulnerabilities.
-**Recovery Plan (Production Dockerfile Guidelines):**
-1. Identify the failing component (`apps/backend` or `apps/frontend`).
-2. Modify the `Dockerfile` to strictly adhere to Production Container patterns:
+
+**Vulnerability Management Policy (ACTION REQUIRED):**
+When analyzing the Trivy scan logs, you MUST apply the following rules based on the severity of the findings:
+- **CRITICAL or HIGH Severity:** You MUST fix the issue immediately by updating the source code or `Dockerfile`. Use the exact package names, CVE IDs, and recommended versions extracted directly from the logs to apply the fix.
+- **MEDIUM or LOW Severity:** Do NOT fix these immediately. Instead, you MUST use your tools (e.g., GitHub MCP) to automatically open a new GitHub Issue. Extract the CVE IDs, package names, and descriptions from the logs and include them in the issue ticket for future tracking.
+
+**Recovery Plan for CRITICAL/HIGH (Production Dockerfile Guidelines):**
+1. Identify the failing component (`apps/backend` or `apps/frontend`) from the pipeline logs.
+2. Modify the `Dockerfile` to resolve the vulnerability while strictly adhering to Production Container patterns:
    - **Multi-stage builds:** Ensure build tools are left out of the final image.
-   - **Minimal Base Image:** Change the base image to `scratch` (for statically compiled Go binaries) or the latest secure version of `distroless`.
+   - **Minimal Base Image:** Change the base image to `scratch` (for statically compiled Go binaries) or the latest patched version of `distroless`.
    - **Non-root user:** Ensure the container runs as a non-root user.
-3. Example Fix: Change `FROM gcr.io/distroless/static-debian11` to `FROM scratch`.
+3. Example Fix: If the log shows a CRITICAL CVE in a specific Debian base, change `FROM gcr.io/distroless/static-debian11` to `FROM scratch`.
 
 ### 2. The Kubernetes/ACA Troubleshooter (Backend Connection Issues)
 **Symptom:** Frontend application returns 500 errors or fails to load data.
