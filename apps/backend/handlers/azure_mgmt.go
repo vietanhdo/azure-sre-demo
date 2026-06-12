@@ -50,9 +50,17 @@ type RevisionInfo struct {
 	ReplicaList []string `json:"replicaList"`
 }
 
+// @Summary Get Azure Container Apps Revisions
+// @Description Fetches the active revisions and their replicas for the SRE backend container app
+// @Tags Azure Management
+// @Produce json
+// @Success 200 {array} RevisionInfo
+// @Failure 500 {string} string "Internal Server Error"
+// @Router /api/azure/revisions [get]
 // GetRevisions returns a list of active revisions and their replicas
 func GetRevisions(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	slog.Info("Handling /api/azure/revisions request")
 
 	cred, err := getAzureCredential()
 	if err != nil {
@@ -114,8 +122,17 @@ func GetRevisions(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(results)
 }
 
+// @Summary Stream Log Analytics Logs
+// @Description Opens a Server-Sent Events (SSE) stream to push live console logs from Azure Log Analytics
+// @Tags Azure Management
+// @Produce text/event-stream
+// @Success 200 {string} string "Event stream connected"
+// @Failure 500 {string} string "Internal Server Error"
+// @Router /api/azure/logs/stream [get]
 // StreamLogs streams logs from Log Analytics Workspace using Server-Sent Events (SSE)
 func StreamLogs(w http.ResponseWriter, r *http.Request) {
+	slog.Info("Client connected to /api/azure/logs/stream")
+
 	// Set headers for Server-Sent Events
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
@@ -174,6 +191,7 @@ func StreamLogs(w http.ResponseWriter, r *http.Request) {
 			}
 
 			if len(resp.Tables) > 0 && len(resp.Tables[0].Rows) > 0 {
+				slog.Info("Fetched new logs from Log Analytics", "count", len(resp.Tables[0].Rows))
 				for _, row := range resp.Tables[0].Rows {
 					timeGeneratedStr := row[0].(string)
 					parsedTime, _ := time.Parse(time.RFC3339Nano, timeGeneratedStr)

@@ -15,6 +15,61 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/azure/logs/stream": {
+            "get": {
+                "description": "Opens a Server-Sent Events (SSE) stream to push live console logs from Azure Log Analytics",
+                "produces": [
+                    "text/event-stream"
+                ],
+                "tags": [
+                    "Azure Management"
+                ],
+                "summary": "Stream Log Analytics Logs",
+                "responses": {
+                    "200": {
+                        "description": "Event stream connected",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/azure/revisions": {
+            "get": {
+                "description": "Fetches the active revisions and their replicas for the SRE backend container app",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Azure Management"
+                ],
+                "summary": "Get Azure Container Apps Revisions",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/handlers.RevisionInfo"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/api/orders": {
             "get": {
                 "description": "get all orders in the system",
@@ -99,6 +154,26 @@ const docTemplate = `{
                             "additionalProperties": {
                                 "type": "string"
                             }
+                        }
+                    }
+                }
+            }
+        },
+        "/fault/cpu": {
+            "post": {
+                "description": "Burns CPU for 1 second to simulate high load",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "fault"
+                ],
+                "summary": "Trigger CPU Stress",
+                "responses": {
+                    "200": {
+                        "description": "CPU Burn completed",
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 }
@@ -307,6 +382,29 @@ const docTemplate = `{
                 },
                 "price": {
                     "type": "number"
+                }
+            }
+        },
+        "handlers.RevisionInfo": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "replicaList": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "replicas": {
+                    "type": "integer"
+                },
+                "trafficWeight": {
+                    "type": "integer"
                 }
             }
         },
