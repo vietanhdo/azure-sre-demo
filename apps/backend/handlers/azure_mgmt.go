@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -46,7 +45,11 @@ func GetRevisions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	revisionsClient := clientFactory.NewContainerAppsRevisionsClient()
-	replicasClient := clientFactory.NewContainerAppsRevisionReplicasClient()
+	replicasClient, err := armappcontainers.NewContainerAppsRevisionReplicasClient(subscriptionID, cred, nil)
+	if err != nil {
+		http.Error(w, "Failed to create replicas client: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	pager := revisionsClient.NewListRevisionsPager(resourceGroup, appName, nil)
 
@@ -74,13 +77,9 @@ func GetRevisions(w http.ResponseWriter, r *http.Request) {
 			}
 
 			// Get replicas for this revision
-			repPager := replicasClient.NewListReplicasPager(resourceGroup, appName, *rev.Name, nil)
-			for repPager.More() {
-				repPage, err := repPager.NextPage(ctx)
-				if err != nil {
-					continue // Ignore errors for single revision replicas
-				}
-				for _, replica := range repPage.Value {
+			repResp, err := replicasClient.ListReplicas(ctx, resourceGroup, appName, *rev.Name, nil)
+			if err == nil {
+				for _, replica := range repResp.Value {
 					info.ReplicaList = append(info.ReplicaList, *replica.Name)
 				}
 			}
