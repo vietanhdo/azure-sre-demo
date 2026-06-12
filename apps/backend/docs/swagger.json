@@ -1,0 +1,356 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "This is a sample API for the Azure SRE Demo project.",
+        "title": "Azure SRE Demo API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/",
+    "paths": {
+        "/api/orders": {
+            "get": {
+                "description": "get all orders in the system",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "app"
+                ],
+                "summary": "Get all orders",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/handlers.Order"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/products": {
+            "get": {
+                "description": "get all products in the system",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "app"
+                ],
+                "summary": "Get all products",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/handlers.Product"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v2/heineken/metrics": {
+            "get": {
+                "description": "get the regional metrics for Heineken SRE dashboard",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "heineken"
+                ],
+                "summary": "Get Heineken metrics",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v2.HeinekenDashboardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/version": {
+            "get": {
+                "description": "get the version, commit sha, and build time",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "system"
+                ],
+                "summary": "Get application version",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/fault/error/disable": {
+            "post": {
+                "description": "stop injecting HTTP 500 errors",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "fault"
+                ],
+                "summary": "Disable 500 errors",
+                "responses": {
+                    "200": {
+                        "description": "Errors disabled",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/fault/error/enable": {
+            "post": {
+                "description": "start injecting HTTP 500 errors into responses",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "fault"
+                ],
+                "summary": "Enable 500 errors",
+                "responses": {
+                    "200": {
+                        "description": "Errors enabled",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/fault/latency/disable": {
+            "post": {
+                "description": "stop injecting latency",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "fault"
+                ],
+                "summary": "Disable response latency",
+                "responses": {
+                    "200": {
+                        "description": "Latency disabled",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/fault/latency/enable": {
+            "post": {
+                "description": "inject latency into responses",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "fault"
+                ],
+                "summary": "Enable response latency",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 2000,
+                        "description": "Milliseconds of latency",
+                        "name": "ms",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Latency enabled",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/fault/oom": {
+            "post": {
+                "description": "starts an infinite allocation loop to crash the app",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "fault"
+                ],
+                "summary": "Trigger Out Of Memory",
+                "responses": {
+                    "202": {
+                        "description": "OOM simulation started",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/fault/status": {
+            "get": {
+                "description": "returns current fault injection toggles and memory stats",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "fault"
+                ],
+                "summary": "Get fault injection status",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/healthz": {
+            "get": {
+                "description": "get the health status of the application",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "system"
+                ],
+                "summary": "System health check",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/ready": {
+            "get": {
+                "description": "get the readiness status of the application",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "system"
+                ],
+                "summary": "System readiness check",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "boolean"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "handlers.Order": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "total": {
+                    "type": "number"
+                }
+            }
+        },
+        "handlers.Product": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "number"
+                }
+            }
+        },
+        "v2.HeinekenDashboardResponse": {
+            "type": "object",
+            "properties": {
+                "breweryDora": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v2.Metric"
+                    }
+                },
+                "location": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "systemMetrics": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v2.Metric"
+                    }
+                },
+                "timestamp": {
+                    "type": "string"
+                }
+            }
+        },
+        "v2.Metric": {
+            "type": "object",
+            "properties": {
+                "label": {
+                    "type": "string"
+                },
+                "status": {
+                    "description": "\"good\", \"warning\", \"critical\"",
+                    "type": "string"
+                },
+                "trend": {
+                    "description": "\"up\", \"down\", \"stable\"",
+                    "type": "string"
+                },
+                "unit": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

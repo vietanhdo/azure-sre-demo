@@ -1,3 +1,8 @@
+// @title Azure SRE Demo API
+// @version 1.0
+// @description This is a sample API for the Azure SRE Demo project.
+// @host localhost:8080
+// @BasePath /
 package main
 
 import (
@@ -14,6 +19,8 @@ import (
 	v2 "github.com/azure-sre-demo/backend/handlers/v2"
 	"github.com/azure-sre-demo/backend/middleware"
 	"github.com/azure-sre-demo/backend/telemetry"
+	_ "github.com/azure-sre-demo/backend/docs"
+	httpSwagger "github.com/swaggo/http-swagger/v2"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"github.com/rs/cors"
 )
@@ -66,6 +73,11 @@ func main() {
 	mux.HandleFunc("/fault/latency/disable", handlers.DisableLatency)
 	mux.HandleFunc("/fault/oom", handlers.TriggerOOM)
 	mux.HandleFunc("/fault/status", handlers.FaultStatus)
+
+	// Swagger handler
+	mux.HandleFunc("/swagger/", httpSwagger.Handler(
+		httpSwagger.URL("/swagger/doc.json"), // The url pointing to API definition
+	))
 
 	// 4. Wrap with middleware (Fault -> Logging -> OTel -> CORS)
 	var handler http.Handler = mux

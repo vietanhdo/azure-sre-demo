@@ -21,6 +21,13 @@ type Product struct {
 	Price float64 `json:"price"`
 }
 
+// Orders godoc
+// @Summary Get all orders
+// @Description get all orders in the system
+// @Tags app
+// @Produce  json
+// @Success 200 {array} Order
+// @Router /api/orders [get]
 func Orders(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	tracer := otel.Tracer("handlers")
@@ -42,6 +49,13 @@ func Orders(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(orders)
 }
 
+// Products godoc
+// @Summary Get all products
+// @Description get all products in the system
+// @Tags app
+// @Produce  json
+// @Success 200 {array} Product
+// @Router /api/products [get]
 func Products(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	tracer := otel.Tracer("handlers")

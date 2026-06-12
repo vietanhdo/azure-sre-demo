@@ -22,6 +22,13 @@ type HeinekenDashboardResponse struct {
 	SystemMetrics []Metric  `json:"systemMetrics"`
 }
 
+// HeinekenMetricsHandler godoc
+// @Summary Get Heineken metrics
+// @Description get the regional metrics for Heineken SRE dashboard
+// @Tags heineken
+// @Produce  json
+// @Success 200 {object} HeinekenDashboardResponse
+// @Router /api/v2/heineken/metrics [get]
 func HeinekenMetricsHandler(w http.ResponseWriter, r *http.Request) {
 	// Simulate reasonable "Brewery SRE" metrics for Heineken
 	response := HeinekenDashboardResponse{
