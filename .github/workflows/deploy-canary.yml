@@ -11,7 +11,8 @@ on:
 env:
   ACR_NAME: "crsredemodemosea"
   RG_NAME: "rg-sre-demo-demo-sea"
-  APP_NAME: "ca-sre-demo-demo-sea-backend"
+  BACKEND_APP_NAME: "ca-sre-demo-demo-sea-backend"
+  FRONTEND_APP_NAME: "ca-sre-demo-demo-sea-frontend"
 
 permissions:
   id-token: write
@@ -28,26 +29,50 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           
-      - name: Deploy Canary Revision
+      - name: Deploy Canary Revision (Backend)
         run: |
           REVISION_SUFFIX="canary-${{ github.sha }}"
           VERSION="${{ github.sha }}-canary"
           
           # Deploy new revision
           az containerapp update \
-            --name ${{ env.APP_NAME }} \
+            --name ${{ env.BACKEND_APP_NAME }} \
             --resource-group ${{ env.RG_NAME }} \
             --image ${{ env.ACR_NAME }}.azurecr.io/backend:${{ github.sha }} \
             --revision-suffix $REVISION_SUFFIX \
             --set-env-vars APP_VERSION=$VERSION
 
           # Get stable revision name
-          STABLE_REV=$(az containerapp revision list -n ${{ env.APP_NAME }} -g ${{ env.RG_NAME }} --query "[?properties.trafficWeight > \`0\`].name | [0]" -o tsv)
+          STABLE_REV=$(az containerapp revision list -n ${{ env.BACKEND_APP_NAME }} -g ${{ env.RG_NAME }} --query "[?properties.trafficWeight > \`0\`].name | [0]" -o tsv)
           STABLE_WEIGHT=$((100 - ${{ github.event.inputs.canary_weight }}))
           
           # Set traffic split
           az containerapp ingress traffic set \
-            --name ${{ env.APP_NAME }} \
+            --name ${{ env.BACKEND_APP_NAME }} \
             --resource-group ${{ env.RG_NAME }} \
-            --revision-weight ${STABLE_REV}=${STABLE_WEIGHT} ${{ env.APP_NAME }}--${REVISION_SUFFIX}=${{ github.event.inputs.canary_weight }} \
+            --revision-weight ${STABLE_REV}=${STABLE_WEIGHT} ${{ env.BACKEND_APP_NAME }}--${REVISION_SUFFIX}=${{ github.event.inputs.canary_weight }} \
+            --label-weight stable=${STABLE_WEIGHT} canary=${{ github.event.inputs.canary_weight }}
+
+      - name: Deploy Canary Revision (Frontend)
+        run: |
+          REVISION_SUFFIX="canary-${{ github.sha }}"
+          VERSION="${{ github.sha }}-canary"
+          
+          # Deploy new revision
+          az containerapp update \
+            --name ${{ env.FRONTEND_APP_NAME }} \
+            --resource-group ${{ env.RG_NAME }} \
+            --image ${{ env.ACR_NAME }}.azurecr.io/frontend:${{ github.sha }} \
+            --revision-suffix $REVISION_SUFFIX \
+            --set-env-vars APP_VERSION=$VERSION
+
+          # Get stable revision name
+          STABLE_REV=$(az containerapp revision list -n ${{ env.FRONTEND_APP_NAME }} -g ${{ env.RG_NAME }} --query "[?properties.trafficWeight > \`0\`].name | [0]" -o tsv)
+          STABLE_WEIGHT=$((100 - ${{ github.event.inputs.canary_weight }}))
+          
+          # Set traffic split
+          az containerapp ingress traffic set \
+            --name ${{ env.FRONTEND_APP_NAME }} \
+            --resource-group ${{ env.RG_NAME }} \
+            --revision-weight ${STABLE_REV}=${STABLE_WEIGHT} ${{ env.FRONTEND_APP_NAME }}--${REVISION_SUFFIX}=${{ github.event.inputs.canary_weight }} \
             --label-weight stable=${STABLE_WEIGHT} canary=${{ github.event.inputs.canary_weight }}
