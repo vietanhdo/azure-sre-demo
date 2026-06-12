@@ -50,7 +50,15 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          
+
+      - name: Cache Trivy DB
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/trivy
+          key: trivy-db-${{ runner.os }}
+          restore-keys: |
+            trivy-db-
+      
       - name: Build Backend Image
         working-directory: ./apps/backend
         run: docker build -t ${{ env.ACR_NAME }}.azurecr.io/backend:${{ github.sha }} .
@@ -59,8 +67,10 @@ jobs:
         working-directory: ./apps/frontend
         run: docker build -t ${{ env.ACR_NAME }}.azurecr.io/frontend:${{ github.sha }} .
         
-      - name: Run Trivy Vulnerability Scanner
+      - name: Run Trivy Vulnerability Scanner (backend)
         uses: aquasecurity/trivy-action@master
+        env:
+          TRIVY_CACHE_DIR: ~/.cache/trivy
         with:
           image-ref: '${{ env.ACR_NAME }}.azurecr.io/backend:${{ github.sha }}'
           format: 'table'
@@ -68,7 +78,16 @@ jobs:
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
-          
+          cache-dir: ~/.cache/trivy
+          timeout: '5m'
+          scanners: 'vuln'
+          hide-progress: true
+          skip-dirs: ''
+          skip-files: ''
+          security-checks: 'vuln'
+          db-repository: 'public.ecr.aws/aquasecurity/trivy-db:2'
+          java-db-repository: 'public.ecr.aws/aquasecurity/trivy-java-db:1'
+
       - name: Push Images to ACR
         run: |
           az acr login --name ${{ env.ACR_NAME }}
