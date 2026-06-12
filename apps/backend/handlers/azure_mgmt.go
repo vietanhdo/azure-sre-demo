@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/monitor/azquery"
@@ -20,6 +22,26 @@ const (
 	workspaceID    = "fc401faa-1b12-4a51-ad8c-acccc7afd609"
 )
 
+// getAzureCredential creates the right credential based on environment.
+// Uses User-Assigned Managed Identity when AZURE_CLIENT_ID is set (production),
+// falls back to DefaultAzureCredential for local development.
+func getAzureCredential() (azcore.TokenCredential, error) {
+	clientID := os.Getenv("AZURE_CLIENT_ID")
+	if clientID == "" {
+		// Try the known User-Assigned MI client ID
+		clientID = "e262dadd-5966-4406-8e9b-2888f0a84efa"
+	}
+	cred, err := azidentity.NewManagedIdentityCredential(&azidentity.ManagedIdentityCredentialOptions{
+		ID: azidentity.ClientID(clientID),
+	})
+	if err != nil {
+		// Fallback: local dev with az login
+		slog.Warn("ManagedIdentityCredential failed, falling back to DefaultAzureCredential", "error", err)
+		return azidentity.NewDefaultAzureCredential(nil)
+	}
+	return cred, nil
+}
+
 type RevisionInfo struct {
 	Name        string   `json:"name"`
 	Active      bool     `json:"active"`
@@ -32,7 +54,7 @@ type RevisionInfo struct {
 func GetRevisions(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	cred, err := azidentity.NewDefaultAzureCredential(nil)
+	cred, err := getAzureCredential()
 	if err != nil {
 		http.Error(w, "Failed to get Azure credential: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -106,7 +128,7 @@ func StreamLogs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
-	cred, err := azidentity.NewDefaultAzureCredential(nil)
+	cred, err := getAzureCredential()
 	if err != nil {
 		fmt.Fprintf(w, "data: {\"error\": \"%s\"}\n\n", err.Error())
 		flusher.Flush()
