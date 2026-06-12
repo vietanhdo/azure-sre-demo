@@ -68,6 +68,9 @@ jobs:
           az containerapp revision label add -n ${{ env.BACKEND_APP_NAME }} -g ${{ env.RG_NAME }} --label stable --revision ${STABLE_REV} -y
           az containerapp revision label add -n ${{ env.BACKEND_APP_NAME }} -g ${{ env.RG_NAME }} --label canary --revision ${{ env.BACKEND_APP_NAME }}--${REVISION_SUFFIX} -y
 
+          # Deactivate 0 traffic active revisions
+          az containerapp revision list -n ${{ env.BACKEND_APP_NAME }} -g ${{ env.RG_NAME }} --query "[?properties.active && properties.trafficWeight == \`0\`].name" -o tsv | while read rev; do echo "Deactivating $rev"; az containerapp revision deactivate -n ${{ env.BACKEND_APP_NAME }} -g ${{ env.RG_NAME }} --revision "$rev"; done
+
       - name: Deploy Canary Revision (Frontend)
         if: github.event.inputs.deploy_frontend == 'true'
         run: |
@@ -96,3 +99,6 @@ jobs:
           # Add labels so the SRE Agent can target them by label
           az containerapp revision label add -n ${{ env.FRONTEND_APP_NAME }} -g ${{ env.RG_NAME }} --label stable --revision ${STABLE_REV} -y
           az containerapp revision label add -n ${{ env.FRONTEND_APP_NAME }} -g ${{ env.RG_NAME }} --label canary --revision ${{ env.FRONTEND_APP_NAME }}--${REVISION_SUFFIX} -y
+
+          # Deactivate 0 traffic active revisions
+          az containerapp revision list -n ${{ env.FRONTEND_APP_NAME }} -g ${{ env.RG_NAME }} --query "[?properties.active && properties.trafficWeight == \`0\`].name" -o tsv | while read rev; do echo "Deactivating $rev"; az containerapp revision deactivate -n ${{ env.FRONTEND_APP_NAME }} -g ${{ env.RG_NAME }} --revision "$rev"; done
