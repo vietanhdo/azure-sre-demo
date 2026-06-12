@@ -1,6 +1,6 @@
 module github.com/azure-sre-demo/backend
 
-go 1.25.0
+go 1.22.0
 
 require (
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.69.0

@@ -163,9 +163,9 @@ export async function fetchDashboardState(): Promise<DashboardState> {
       fetch(`${API_BASE}/api/version`),
     ]);
 
-    const health = await healthRes.json();
+    await healthRes.json();
     const fault: FaultConfig = await faultRes.json();
-    const version = await versionRes.json();
+    await versionRes.json();
 
     // In real mode, we'd also query Azure Monitor / Prometheus for metrics
     // For now, generate from fault status
