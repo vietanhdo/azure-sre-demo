@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Activity, Thermometer, Clock, AlertTriangle, CheckCircle, RefreshCcw } from 'lucide-react';
+import { FaultControls } from '../components/FaultControls';
 
 interface Metric {
   label: string;
@@ -121,6 +122,9 @@ export function HeinekenDashboard() {
           </div>
         ))}
       </div>
+      
+      {/* Fault Controls */}
+      <FaultControls />
       
       {/* Global CSS for spin animation */}
       <style>{`
