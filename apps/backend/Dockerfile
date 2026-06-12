@@ -1,5 +1,5 @@
 # 1. Build stage
-FROM golang:1.23-alpine AS builder
+FROM golang:1.25-alpine AS builder
 
 WORKDIR /app
 COPY go.mod go.sum ./
@@ -20,8 +20,8 @@ RUN go env -w GOMODCACHE=/go/pkg/mod \
     -ldflags="-s -w -X main.Version=${VERSION} -X main.CommitSHA=${COMMIT} -X main.BuildTime=${BUILD_TIME}" \
     -o /app/backend ./main.go
 
-# 2. Production stage (distroless)
-FROM gcr.io/distroless/static-debian12:nonroot
+# 2. Production stage (scratch for zero OS CVEs)
+FROM scratch
 
 WORKDIR /
 COPY --from=builder /app/backend /backend
