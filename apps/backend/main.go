@@ -11,9 +11,11 @@ import (
 	"time"
 
 	"github.com/azure-sre-demo/backend/handlers"
+	v2 "github.com/azure-sre-demo/backend/handlers/v2"
 	"github.com/azure-sre-demo/backend/middleware"
 	"github.com/azure-sre-demo/backend/telemetry"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"github.com/rs/cors"
 )
 
 var (
@@ -53,6 +55,9 @@ func main() {
 	// Application handlers
 	mux.HandleFunc("/api/orders", handlers.Orders)
 	mux.HandleFunc("/api/products", handlers.Products)
+	
+	// V2 Application handlers
+	mux.HandleFunc("/api/v2/heineken/metrics", v2.HeinekenMetricsHandler)
 
 	// Fault injection handlers
 	mux.HandleFunc("/fault/error/enable", handlers.EnableError)
@@ -62,11 +67,21 @@ func main() {
 	mux.HandleFunc("/fault/oom", handlers.TriggerOOM)
 	mux.HandleFunc("/fault/status", handlers.FaultStatus)
 
-	// 4. Wrap with middleware (Fault -> Logging -> OTel)
+	// 4. Wrap with middleware (Fault -> Logging -> OTel -> CORS)
 	var handler http.Handler = mux
 	handler = middleware.FaultInjection(handler)
 	handler = middleware.Logging(handler)
 	handler = otelhttp.NewHandler(handler, "http-server")
+
+	c := cors.New(cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: true,
+		MaxAge:           300, 
+	})
+	handler = c.Handler(handler)
 
 	// 5. Start Server
 	port := os.Getenv("PORT")
