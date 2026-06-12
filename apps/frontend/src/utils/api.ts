@@ -11,7 +11,7 @@ let demoMode = false;
 
 // ── API endpoints for Azure Management
 export async function fetchRevisions() {
-  const response = await fetch(`${API_BASE}/azure/revisions`);
+  const response = await fetch(`${API_BASE}/api/azure/revisions`);
   if (!response.ok) {
     throw new Error('Failed to fetch revisions');
   }
