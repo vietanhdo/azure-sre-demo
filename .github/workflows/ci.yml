@@ -86,7 +86,9 @@ jobs:
       - name: Build Frontend Image
         if: steps.filter.outputs.frontend == 'true'
         working-directory: ./apps/frontend
-        run: docker build -t ${{ env.ACR_NAME }}.azurecr.io/frontend:${{ github.sha }} .
+        run: |
+          APPINSIGHTS_CONN_STR=$(az monitor app-insights component show --app appi-sre-demo-demo-sea -g rg-sre-demo-demo-sea --query "connectionString" -o tsv)
+          docker build --build-arg VITE_APPINSIGHTS_CONNECTION_STRING="$APPINSIGHTS_CONN_STR" -t ${{ env.ACR_NAME }}.azurecr.io/frontend:${{ github.sha }} .
         
       - name: Run Trivy Vulnerability Scanner (backend)
         if: steps.filter.outputs.backend == 'true'

@@ -5,6 +5,8 @@ COPY package*.json ./
 # Build requires devDependencies (typescript, vite, eslint etc.)
 RUN npm ci
 COPY . .
+ARG VITE_APPINSIGHTS_CONNECTION_STRING
+ENV VITE_APPINSIGHTS_CONNECTION_STRING=$VITE_APPINSIGHTS_CONNECTION_STRING
 RUN npm run build
 
 # 2. Production stage (non-root runtime)

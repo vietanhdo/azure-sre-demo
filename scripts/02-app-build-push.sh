@@ -27,7 +27,8 @@ docker push ${ACR}.azurecr.io/backend:${VERSION}
 
 echo -e "${GREEN}Building Frontend Image...${NC}"
 cd ../frontend
-docker build -t ${ACR}.azurecr.io/frontend:${VERSION} .
+APPINSIGHTS_CONN_STR=$(az monitor app-insights component show --app appi-sre-demo-demo-sea -g rg-sre-demo-demo-sea --query "connectionString" -o tsv)
+docker build --build-arg VITE_APPINSIGHTS_CONNECTION_STRING="$APPINSIGHTS_CONN_STR" -t ${ACR}.azurecr.io/frontend:${VERSION} .
 docker push ${ACR}.azurecr.io/frontend:${VERSION}
 
 echo -e "${GREEN}Build & Push Complete!${NC}"
