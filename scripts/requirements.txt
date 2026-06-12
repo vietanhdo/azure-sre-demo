@@ -1,0 +1,4 @@
+azure-identity==1.17.1
+azure-monitor-query==1.4.0
+requests==2.32.3
+rich==13.7.1
