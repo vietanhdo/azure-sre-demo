@@ -1,7 +1,6 @@
 // @title Azure SRE Demo API
 // @version 1.0
 // @description This is a sample API for the Azure SRE Demo project.
-// @host localhost:8080
 // @BasePath /
 package main
 
