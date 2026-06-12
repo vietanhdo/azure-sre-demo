@@ -40,7 +40,7 @@ export function HeinekenDashboard() {
 
   useEffect(() => {
     fetchMetrics();
-    const interval = setInterval(fetchMetrics, 30000);
+    const interval = setInterval(fetchMetrics, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -52,20 +52,20 @@ export function HeinekenDashboard() {
     );
   }
 
-  if (error && !data) {
+  if (error) {
     return (
       <div style={{ minHeight: '100vh', backgroundColor: '#0a2612', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ backgroundColor: '#1f1f1f', padding: '40px', borderRadius: '8px', border: '1px solid #FF0000', textAlign: 'center' }}>
           <h2 style={{ color: '#FF0000' }}>Systems Offline</h2>
           <p style={{ color: '#aaa' }}>{error}</p>
-          <button onClick={fetchMetrics} style={{ marginTop: '20px', padding: '10px 20px', backgroundColor: '#008200', border: 'none', color: 'white', borderRadius: '4px', cursor: 'pointer' }}>Retry</button>
+          <button onClick={fetchMetrics} style={{ marginTop: '20px', padding: '10px 20px', backgroundColor: '#008200', border: 'none', color: 'white', borderRadius: '4px', cursor: 'pointer' }}>Retry Connection</button>
         </div>
       </div>
     );
   }
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#0a2612', color: '#fff', padding: '40px', fontFamily: 'system-ui, sans-serif' }}>
+    <div className={loading ? 'lagging' : ''} style={{ minHeight: '100vh', backgroundColor: '#0a2612', color: '#fff', padding: '40px', fontFamily: 'system-ui, sans-serif' }}>
       {/* Header */}
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', borderBottom: '1px solid rgba(0,130,0,0.3)', paddingBottom: '20px' }}>
         <div>
@@ -130,6 +130,7 @@ export function HeinekenDashboard() {
       <style>{`
         @keyframes spin { 100% { transform: rotate(360deg); } }
         .spin { animation: spin 1s linear infinite; }
+        .lagging { opacity: 0.5; filter: grayscale(50%); transition: all 0.3s; pointer-events: none; }
       `}</style>
     </div>
   );

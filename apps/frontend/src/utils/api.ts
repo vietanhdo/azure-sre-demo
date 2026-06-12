@@ -7,7 +7,7 @@ const API_BASE = import.meta.env.VITE_API_URL || '';
  * In production, this would poll the Go backend /api/* and /fault/status endpoints.
  */
 
-let demoMode = !API_BASE;
+let demoMode = false;
 
 // ── Simulated State ──
 let simulatedFaultError = false;
