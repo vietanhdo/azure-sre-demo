@@ -17,12 +17,6 @@ import (
 
 // InitTelemetry initializes OpenTelemetry tracing and metrics
 func InitTelemetry(ctx context.Context, serviceName, version string) (func(context.Context) error, error) {
-	// If no OTLP endpoint is configured, just use a no-op setup
-	if os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT") == "" {
-		slog.Info("OTEL_EXPORTER_OTLP_ENDPOINT not set, skipping OpenTelemetry initialization")
-		return func(context.Context) error { return nil }, nil
-	}
-
 	res, err := resource.New(ctx,
 		resource.WithAttributes(
 			semconv.ServiceNameKey.String(serviceName),
@@ -34,29 +28,41 @@ func InitTelemetry(ctx context.Context, serviceName, version string) (func(conte
 		return nil, err
 	}
 
-	// 1. Setup Tracing
-	traceExporter, err := otlptracegrpc.New(ctx)
-	if err != nil {
-		return nil, err
+	var traceExporter sdktrace.SpanExporter
+	var metricExporter sdkmetric.Exporter
+
+	if os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT") != "" {
+		traceExporter, err = otlptracegrpc.New(ctx)
+		if err != nil {
+			return nil, err
+		}
+		metricExporter, err = otlpmetricgrpc.New(ctx)
+		if err != nil {
+			return nil, err
+		}
 	}
-	bsp := sdktrace.NewBatchSpanProcessor(traceExporter)
-	tracerProvider := sdktrace.NewTracerProvider(
+
+	// 1. Setup Tracing
+	tracerProviderOptions := []sdktrace.TracerProviderOption{
 		sdktrace.WithSampler(sdktrace.AlwaysSample()),
 		sdktrace.WithResource(res),
-		sdktrace.WithSpanProcessor(bsp),
-	)
+	}
+	if traceExporter != nil {
+		bsp := sdktrace.NewBatchSpanProcessor(traceExporter)
+		tracerProviderOptions = append(tracerProviderOptions, sdktrace.WithSpanProcessor(bsp))
+	}
+	tracerProvider := sdktrace.NewTracerProvider(tracerProviderOptions...)
 	otel.SetTracerProvider(tracerProvider)
 
 	// 2. Setup Metrics
-	metricExporter, err := otlpmetricgrpc.New(ctx)
-	if err != nil {
-		return nil, err
+	var meterProvider *sdkmetric.MeterProvider
+	if metricExporter != nil {
+		meterProvider = sdkmetric.NewMeterProvider(
+			sdkmetric.WithReader(sdkmetric.NewPeriodicReader(metricExporter)),
+			sdkmetric.WithResource(res),
+		)
+		otel.SetMeterProvider(meterProvider)
 	}
-	meterProvider := sdkmetric.NewMeterProvider(
-		sdkmetric.WithReader(sdkmetric.NewPeriodicReader(metricExporter)),
-		sdkmetric.WithResource(res),
-	)
-	otel.SetMeterProvider(meterProvider)
 
 	// 3. Setup Propagation
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
@@ -71,8 +77,10 @@ func InitTelemetry(ctx context.Context, serviceName, version string) (func(conte
 		if tErr := tracerProvider.Shutdown(ctx); tErr != nil {
 			err = tErr
 		}
-		if mErr := meterProvider.Shutdown(ctx); mErr != nil {
-			err = mErr
+		if meterProvider != nil {
+			if mErr := meterProvider.Shutdown(ctx); mErr != nil {
+				err = mErr
+			}
 		}
 		return err
 	}
