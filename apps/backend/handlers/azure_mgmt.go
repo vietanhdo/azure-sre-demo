@@ -81,40 +81,43 @@ func GetRevisions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pager := revisionsClient.NewListRevisionsPager(resourceGroup, appName, nil)
-
 	var results []RevisionInfo
+	apps := []string{"ca-sre-demo-demo-sea-backend", "ca-sre-demo-demo-sea-frontend"}
 
-	for pager.More() {
-		page, err := pager.NextPage(ctx)
-		if err != nil {
-			http.Error(w, "Failed to list revisions: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
+	for _, currentApp := range apps {
+		pager := revisionsClient.NewListRevisionsPager(resourceGroup, currentApp, nil)
 
-		for _, rev := range page.Value {
-			if rev.Properties == nil || rev.Properties.Active == nil || !*rev.Properties.Active {
-				continue // Only care about active revisions
+		for pager.More() {
+			page, err := pager.NextPage(ctx)
+			if err != nil {
+				slog.Error("Failed to list revisions for app", "app", currentApp, "error", err)
+				continue
 			}
 
-			info := RevisionInfo{
-				Name:     *rev.Name,
-				Active:   *rev.Properties.Active,
-				Replicas: *rev.Properties.Replicas,
-			}
-			if rev.Properties.TrafficWeight != nil {
-				info.Traffic = *rev.Properties.TrafficWeight
-			}
-
-			// Get replicas for this revision
-			repResp, err := replicasClient.ListReplicas(ctx, resourceGroup, appName, *rev.Name, nil)
-			if err == nil {
-				for _, replica := range repResp.Value {
-					info.ReplicaList = append(info.ReplicaList, *replica.Name)
+			for _, rev := range page.Value {
+				if rev.Properties == nil || rev.Properties.Active == nil || !*rev.Properties.Active {
+					continue // Only care about active revisions
 				}
-			}
 
-			results = append(results, info)
+				info := RevisionInfo{
+					Name:     *rev.Name,
+					Active:   *rev.Properties.Active,
+					Replicas: *rev.Properties.Replicas,
+				}
+				if rev.Properties.TrafficWeight != nil {
+					info.Traffic = *rev.Properties.TrafficWeight
+				}
+
+				// Get replicas for this revision
+				repResp, err := replicasClient.ListReplicas(ctx, resourceGroup, currentApp, *rev.Name, nil)
+				if err == nil {
+					for _, replica := range repResp.Value {
+						info.ReplicaList = append(info.ReplicaList, *replica.Name)
+					}
+				}
+
+				results = append(results, info)
+			}
 		}
 	}
 
@@ -174,12 +177,12 @@ func StreamLogs(w http.ResponseWriter, r *http.Request) {
 			timeStr := lastTime.UTC().Format(time.RFC3339Nano)
 			query := fmt.Sprintf(`
 				ContainerAppConsoleLogs_CL
-				| where ContainerAppName_s == '%s'
+				| where ContainerAppName_s in ('ca-sre-demo-demo-sea-backend', 'ca-sre-demo-demo-sea-frontend')
 				| where TimeGenerated > datetime('%s')
 				| project TimeGenerated, RevisionName_s, ContainerName_s, Log_s
 				| order by TimeGenerated asc
 				| limit 100
-			`, appName, timeStr)
+			`, timeStr)
 
 			resp, err := client.QueryWorkspace(ctx, workspaceID, azquery.Body{
 				Query: to.Ptr(query),
