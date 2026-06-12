@@ -16,7 +16,7 @@ export function initializeTelemetry(connectionString: string) {
       disableFetchTracking: false,
       maxBatchSizeInBytes: 10000,
       maxBatchInterval: 5000, // Send data every 5 seconds
-      correlationHeaderExcludedDomains: ['*'], // Necessary for localhost
+      enableCorsCorrelation: true, // Enable traceparent headers
     }
   });
 
