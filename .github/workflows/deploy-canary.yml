@@ -47,12 +47,15 @@ jobs:
           STABLE_REV=$(az containerapp revision list -n ${{ env.BACKEND_APP_NAME }} -g ${{ env.RG_NAME }} --query "[?properties.trafficWeight > \`0\`].name | [0]" -o tsv)
           STABLE_WEIGHT=$((100 - ${{ github.event.inputs.canary_weight }}))
           
-          # Set traffic split
+          # Set traffic split using revision names
           az containerapp ingress traffic set \
             --name ${{ env.BACKEND_APP_NAME }} \
             --resource-group ${{ env.RG_NAME }} \
-            --revision-weight ${STABLE_REV}=${STABLE_WEIGHT} ${{ env.BACKEND_APP_NAME }}--${REVISION_SUFFIX}=${{ github.event.inputs.canary_weight }} \
-            --label-weight stable=${STABLE_WEIGHT} canary=${{ github.event.inputs.canary_weight }}
+            --revision-weight ${STABLE_REV}=${STABLE_WEIGHT} ${{ env.BACKEND_APP_NAME }}--${REVISION_SUFFIX}=${{ github.event.inputs.canary_weight }}
+            
+          # Add labels so the SRE Agent can target them by label
+          az containerapp revision label add -n ${{ env.BACKEND_APP_NAME }} -g ${{ env.RG_NAME }} --label stable --revision ${STABLE_REV} -y
+          az containerapp revision label add -n ${{ env.BACKEND_APP_NAME }} -g ${{ env.RG_NAME }} --label canary --revision ${{ env.BACKEND_APP_NAME }}--${REVISION_SUFFIX} -y
 
       - name: Deploy Canary Revision (Frontend)
         run: |
@@ -72,9 +75,12 @@ jobs:
           STABLE_REV=$(az containerapp revision list -n ${{ env.FRONTEND_APP_NAME }} -g ${{ env.RG_NAME }} --query "[?properties.trafficWeight > \`0\`].name | [0]" -o tsv)
           STABLE_WEIGHT=$((100 - ${{ github.event.inputs.canary_weight }}))
           
-          # Set traffic split
+          # Set traffic split using revision names
           az containerapp ingress traffic set \
             --name ${{ env.FRONTEND_APP_NAME }} \
             --resource-group ${{ env.RG_NAME }} \
-            --revision-weight ${STABLE_REV}=${STABLE_WEIGHT} ${{ env.FRONTEND_APP_NAME }}--${REVISION_SUFFIX}=${{ github.event.inputs.canary_weight }} \
-            --label-weight stable=${STABLE_WEIGHT} canary=${{ github.event.inputs.canary_weight }}
+            --revision-weight ${STABLE_REV}=${STABLE_WEIGHT} ${{ env.FRONTEND_APP_NAME }}--${REVISION_SUFFIX}=${{ github.event.inputs.canary_weight }}
+
+          # Add labels so the SRE Agent can target them by label
+          az containerapp revision label add -n ${{ env.FRONTEND_APP_NAME }} -g ${{ env.RG_NAME }} --label stable --revision ${STABLE_REV} -y
+          az containerapp revision label add -n ${{ env.FRONTEND_APP_NAME }} -g ${{ env.RG_NAME }} --label canary --revision ${{ env.FRONTEND_APP_NAME }}--${REVISION_SUFFIX} -y
