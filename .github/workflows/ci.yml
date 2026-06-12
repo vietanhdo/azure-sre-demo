@@ -157,18 +157,13 @@ jobs:
           # Deactivate 0 traffic active revisions
           az containerapp revision list -n ${{ env.BACKEND_APP_NAME }} -g ${{ env.RG_NAME }} --query "[?properties.active && properties.trafficWeight == \`0\`].name" -o tsv | while read rev; do echo "Deactivating $rev"; az containerapp revision deactivate -n ${{ env.BACKEND_APP_NAME }} -g ${{ env.RG_NAME }} --revision "$rev"; done
 
-      - name: Deploy Frontend to ACA (Canary 80/20)
+      - name: Deploy Frontend to ACA
         if: steps.filter.outputs.frontend == 'true'
         run: |
           SHORT_SHA=${GITHUB_SHA::7}
-          REVISION_SUFFIX="canary-${SHORT_SHA}"
-          VERSION="${SHORT_SHA}-canary"
+          REVISION_SUFFIX="main-${SHORT_SHA}"
+          VERSION="${SHORT_SHA}"
           
-          # Get stable revision name BEFORE deploying the new one
-          STABLE_REV=$(az containerapp revision list -n ${{ env.FRONTEND_APP_NAME }} -g ${{ env.RG_NAME }} --query "[?properties.trafficWeight > \`0\`].name | [0]" -o tsv)
-          STABLE_WEIGHT=80
-          CANARY_WEIGHT=20
-
           # Deploy new revision
           az containerapp update \
             --name ${{ env.FRONTEND_APP_NAME }} \
@@ -177,15 +172,14 @@ jobs:
             --revision-suffix $REVISION_SUFFIX \
             --set-env-vars APP_VERSION=$VERSION
           
-          # Set traffic split
+          # Set traffic to 100%
           az containerapp ingress traffic set \
             --name ${{ env.FRONTEND_APP_NAME }} \
             --resource-group ${{ env.RG_NAME }} \
-            --revision-weight ${STABLE_REV}=${STABLE_WEIGHT} ${{ env.FRONTEND_APP_NAME }}--${REVISION_SUFFIX}=${CANARY_WEIGHT}
+            --revision-weight ${{ env.FRONTEND_APP_NAME }}--${REVISION_SUFFIX}=100
 
-          # Add labels
-          az containerapp revision label add -n ${{ env.FRONTEND_APP_NAME }} -g ${{ env.RG_NAME }} --label stable --revision ${STABLE_REV} -y
-          az containerapp revision label add -n ${{ env.FRONTEND_APP_NAME }} -g ${{ env.RG_NAME }} --label canary --revision ${{ env.FRONTEND_APP_NAME }}--${REVISION_SUFFIX} -y
+          # Add label
+          az containerapp revision label add -n ${{ env.FRONTEND_APP_NAME }} -g ${{ env.RG_NAME }} --label stable --revision ${{ env.FRONTEND_APP_NAME }}--${REVISION_SUFFIX} -y
 
           # Deactivate 0 traffic active revisions
           az containerapp revision list -n ${{ env.FRONTEND_APP_NAME }} -g ${{ env.RG_NAME }} --query "[?properties.active && properties.trafficWeight == \`0\`].name" -o tsv | while read rev; do echo "Deactivating $rev"; az containerapp revision deactivate -n ${{ env.FRONTEND_APP_NAME }} -g ${{ env.RG_NAME }} --revision "$rev"; done
