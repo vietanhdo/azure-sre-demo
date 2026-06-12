@@ -24,6 +24,14 @@ export function initializeTelemetry(connectionString: string) {
   appInsights.addTelemetryInitializer((envelope) => {
     envelope.tags = envelope.tags || [];
     envelope.tags['ai.cloud.role'] = 'frontend'; // Set cloud role name for app map
+    
+    // Inject revision name if available
+    const rev = (window as any).APP_REVISION;
+    if (rev && rev !== '__APP_REVISION__') {
+      envelope.tags['ai.cloud.roleInstance'] = rev;
+    } else {
+      envelope.tags['ai.cloud.roleInstance'] = 'browser-client';
+    }
   });
 
   appInsights.trackPageView(); // Initial page view
