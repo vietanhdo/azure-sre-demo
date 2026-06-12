@@ -31,8 +31,9 @@ jobs:
           
       - name: Deploy Canary Revision (Backend)
         run: |
-          REVISION_SUFFIX="canary-${{ github.sha }}"
-          VERSION="${{ github.sha }}-canary"
+          SHORT_SHA=${GITHUB_SHA::7}
+          REVISION_SUFFIX="canary-${SHORT_SHA}"
+          VERSION="${SHORT_SHA}-canary"
           
           # Deploy new revision
           az containerapp update \
@@ -55,8 +56,9 @@ jobs:
 
       - name: Deploy Canary Revision (Frontend)
         run: |
-          REVISION_SUFFIX="canary-${{ github.sha }}"
-          VERSION="${{ github.sha }}-canary"
+          SHORT_SHA=${GITHUB_SHA::7}
+          REVISION_SUFFIX="canary-${SHORT_SHA}"
+          VERSION="${SHORT_SHA}-canary"
           
           # Deploy new revision
           az containerapp update \
