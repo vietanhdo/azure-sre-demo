@@ -36,6 +36,12 @@ func (w *responseWriterObserver) Write(p []byte) (n int, err error) {
 	return
 }
 
+func (w *responseWriterObserver) Flush() {
+	if flusher, ok := w.ResponseWriter.(http.Flusher); ok {
+		flusher.Flush()
+	}
+}
+
 func Logging(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
@@ -66,13 +72,19 @@ func Logging(next http.Handler) http.Handler {
 		}
 
 		// Use structured logging
-		slog.Info("HTTP Request",
+		logAttrs := []any{
 			slog.String("method", r.Method),
 			slog.String("path", r.URL.Path),
 			slog.Int("status", observer.status),
 			slog.Duration("duration", duration),
 			slog.String("user_agent", r.UserAgent()),
 			slog.String("trace_id", traceID),
-		)
+		}
+
+		if observer.status >= 500 {
+			slog.Error("HTTP Request Failed", logAttrs...)
+		} else {
+			slog.Info("HTTP Request", logAttrs...)
+		}
 	})
 }
