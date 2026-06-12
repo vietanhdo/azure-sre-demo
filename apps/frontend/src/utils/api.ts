@@ -9,6 +9,15 @@ const API_BASE = import.meta.env.VITE_API_URL || '';
 
 let demoMode = false;
 
+// ── API endpoints for Azure Management
+export async function fetchRevisions() {
+  const response = await fetch(`${API_BASE}/azure/revisions`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch revisions');
+  }
+  return await response.json();
+}
+
 // ── Simulated State ──
 let simulatedFaultError = false;
 let simulatedFaultLatency = false;

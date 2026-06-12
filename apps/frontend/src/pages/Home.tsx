@@ -1,10 +1,9 @@
 import { useDashboardData } from '../hooks/useDashboardData';
 import { MetricCard } from '../components/MetricCard';
-import { TrafficSplit } from '../components/TrafficSplit';
-import { RevisionCard } from '../components/RevisionCard';
+import { RevisionManager } from '../components/RevisionManager';
+import { LogStreamViewer } from '../components/LogStreamViewer';
 import { FaultPanel } from '../components/FaultPanel';
 import { LoadGenerator } from '../components/LoadGenerator';
-import { EventLog } from '../components/EventLog';
 import { SloGauge } from '../components/SloGauge';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { toggleFaultError, toggleFaultLatency, triggerOOM } from '../utils/api';
@@ -65,18 +64,11 @@ export function Home() {
           {/* Left Column (Wider) */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             <div className="animate-slide-up" style={{ animationDelay: '0.4s' }}>
-              <TrafficSplit split={data.trafficSplit} />
+              <RevisionManager />
             </div>
             
-            <div className="revision-cards animate-slide-up" style={{ animationDelay: '0.5s' }}>
-              <RevisionCard revision={data.stableRevision} />
-              {data.canaryRevision && (
-                <RevisionCard revision={data.canaryRevision} />
-              )}
-            </div>
-            
-            <div className="animate-slide-up" style={{ animationDelay: '0.6s', flex: 1 }}>
-              <EventLog events={data.events} />
+            <div className="animate-slide-up" style={{ animationDelay: '0.6s', flex: 1, minHeight: '400px' }}>
+              <LogStreamViewer />
             </div>
           </div>
 

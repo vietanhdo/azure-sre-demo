@@ -79,6 +79,10 @@ func main() {
 	mux.HandleFunc("/fault/cpu", handlers.CPUStress)
 	mux.HandleFunc("/fault/status", handlers.FaultStatus)
 
+	// Azure Management Routes
+	mux.HandleFunc("/api/azure/revisions", handlers.GetRevisions)
+	mux.HandleFunc("/api/azure/logs/stream", handlers.StreamLogs)
+
 	// Swagger handler
 	mux.HandleFunc("/swagger/", httpSwagger.Handler(
 		httpSwagger.URL("/swagger/doc.json"), // The url pointing to API definition
