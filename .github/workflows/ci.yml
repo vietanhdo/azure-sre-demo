@@ -51,7 +51,18 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+      - name: Check file changes
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            backend:
+              - 'apps/backend/**'
+            frontend:
+              - 'apps/frontend/**'
+
       - name: Cache Trivy DB
+        if: steps.filter.outputs.backend == 'true'
         uses: actions/cache@v4
         with:
           path: ~/.cache/trivy
@@ -60,14 +71,17 @@ jobs:
             trivy-db-
       
       - name: Build Backend Image
+        if: steps.filter.outputs.backend == 'true'
         working-directory: ./apps/backend
         run: docker build -t ${{ env.ACR_NAME }}.azurecr.io/backend:${{ github.sha }} .
         
       - name: Build Frontend Image
+        if: steps.filter.outputs.frontend == 'true'
         working-directory: ./apps/frontend
         run: docker build -t ${{ env.ACR_NAME }}.azurecr.io/frontend:${{ github.sha }} .
         
       - name: Run Trivy Vulnerability Scanner (backend)
+        if: steps.filter.outputs.backend == 'true'
         uses: aquasecurity/trivy-action@master
         env:
           TRIVY_CACHE_DIR: ~/.cache/trivy
@@ -88,13 +102,20 @@ jobs:
           db-repository: 'public.ecr.aws/aquasecurity/trivy-db:2'
           java-db-repository: 'public.ecr.aws/aquasecurity/trivy-java-db:1'
 
-      - name: Push Images to ACR
+      - name: Push Backend Image to ACR
+        if: steps.filter.outputs.backend == 'true'
         run: |
           az acr login --name ${{ env.ACR_NAME }}
           docker push ${{ env.ACR_NAME }}.azurecr.io/backend:${{ github.sha }}
+
+      - name: Push Frontend Image to ACR
+        if: steps.filter.outputs.frontend == 'true'
+        run: |
+          az acr login --name ${{ env.ACR_NAME }}
           docker push ${{ env.ACR_NAME }}.azurecr.io/frontend:${{ github.sha }}
 
       - name: Deploy Backend to ACA
+        if: steps.filter.outputs.backend == 'true'
         run: |
           az containerapp update \
             --name ${{ env.BACKEND_APP_NAME }} \
@@ -102,6 +123,7 @@ jobs:
             --image ${{ env.ACR_NAME }}.azurecr.io/backend:${{ github.sha }}
 
       - name: Deploy Frontend to ACA
+        if: steps.filter.outputs.frontend == 'true'
         run: |
           az containerapp update \
             --name ${{ env.FRONTEND_APP_NAME }} \

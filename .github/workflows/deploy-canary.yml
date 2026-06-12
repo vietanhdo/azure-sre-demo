@@ -7,6 +7,16 @@ on:
         description: 'Traffic percentage for the canary revision'
         required: true
         default: '20'
+      deploy_backend:
+        description: 'Deploy Backend'
+        type: boolean
+        required: true
+        default: true
+      deploy_frontend:
+        description: 'Deploy Frontend'
+        type: boolean
+        required: true
+        default: true
 
 env:
   ACR_NAME: "crsredemodemosea"
@@ -30,6 +40,7 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           
       - name: Deploy Canary Revision (Backend)
+        if: github.event.inputs.deploy_backend == 'true'
         run: |
           SHORT_SHA=${GITHUB_SHA::7}
           REVISION_SUFFIX="canary-${SHORT_SHA}"
@@ -58,6 +69,7 @@ jobs:
           az containerapp revision label add -n ${{ env.BACKEND_APP_NAME }} -g ${{ env.RG_NAME }} --label canary --revision ${{ env.BACKEND_APP_NAME }}--${REVISION_SUFFIX} -y
 
       - name: Deploy Canary Revision (Frontend)
+        if: github.event.inputs.deploy_frontend == 'true'
         run: |
           SHORT_SHA=${GITHUB_SHA::7}
           REVISION_SUFFIX="canary-${SHORT_SHA}"
