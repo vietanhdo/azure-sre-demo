@@ -1,3 +1,4 @@
+// SRE Dashboard with RevisionManager + LogStreamViewer
 import { useDashboardData } from '../hooks/useDashboardData';
 import { MetricCard } from '../components/MetricCard';
 import { RevisionManager } from '../components/RevisionManager';
