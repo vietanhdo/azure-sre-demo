@@ -25,9 +25,15 @@ resource "azurerm_monitor_workspace" "amw" {
   tags                = var.tags
 }
 
-# Grant Grafana Managed Identity access to Log Analytics Workspace
 resource "azurerm_role_assignment" "grafana_law_reader" {
   scope                = var.law_id
   role_definition_name = "Monitoring Reader"
   principal_id         = azurerm_dashboard_grafana.grafana.identity[0].principal_id
+}
+
+# Grant the user running Terraform Grafana Admin access
+resource "azurerm_role_assignment" "grafana_admin" {
+  scope                = azurerm_dashboard_grafana.grafana.id
+  role_definition_name = "Grafana Admin"
+  principal_id         = var.admin_user_id
 }

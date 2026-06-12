@@ -6,8 +6,12 @@ output "acr_login_server" {
   value = module.acr.login_server
 }
 
-output "aca_fqdn" {
-  value = module.aca.fqdn
+output "backend_fqdn" {
+  value = module.aca.backend_fqdn
+}
+
+output "frontend_fqdn" {
+  value = module.aca.frontend_fqdn
 }
 
 output "grafana_url" {
