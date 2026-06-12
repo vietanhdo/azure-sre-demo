@@ -13,7 +13,6 @@ export function initializeTelemetry(connectionString: string) {
       connectionString: connectionString,
       enableAutoRouteTracking: true,
       enableAjaxPerfTracking: true,
-      enableAjaxErrorTracking: true,
       disableFetchTracking: false,
       maxBatchSizeInBytes: 10000,
       maxBatchInterval: 5000, // Send data every 5 seconds
