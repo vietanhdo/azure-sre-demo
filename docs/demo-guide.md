@@ -50,13 +50,17 @@ Instead of waiting 10 minutes for Terraform to deploy live, it is highly recomme
 5. **Observe:** Open the React Dashboard and Grafana. The Canary revision's error rate will spike. The SLO gauge will turn RED and display "BREACHED".
 
 ### Phase 5: Autonomous RCA & Auto-Remediation (95-110 mins)
-1. Wait ~3-5 minutes. The Azure Monitor Alert will fire.
-2. *Simulation Note:* Show a screenshot or a live Telegram channel where the "Azure SRE Agent" bot posts its findings.
-   - The bot message should clearly state: "Memory leak/Error injected in `handlers/fault.go:42`".
-3. The bot automatically executes a rollback.
-4. Run the rollback script locally to mirror the bot's action:
+1. In this phase, we demonstrate the **Official Azure SRE Agent** in action.
+2. Ensure the GitHub Actions pipeline has failed (e.g., due to the Trivy Security Scan blocking the `distroless` base image).
+3. The **Telegram Bot** will push an alert: "🚨 GitHub Actions Failed! 🚨" along with the Run ID.
+4. **ChatOps with SRE Agent:** Open the Azure SRE Agent Builder in the Azure Portal (or use its chatbot interface).
+5. Paste the Run ID and prompt the agent:
+   > "Hãy kiểm tra log của GitHub Actions Run ID `<RUN_ID>` trong repo `vietanhdo/azure-sre-demo`. Tìm nguyên nhân lỗi và tư vấn cách sửa dựa trên runbook đã upload nhé."
+6. **Observe the AI Magic:** The agent will use its **GitHub MCP Connector** to read the pipeline logs, correlate it with `docs/sre_runbook.md`, and suggest changing the base image to `scratch`.
+7. (Optional) Run the rollback script or push the fix locally to recover the pipeline:
    ```bash
-   ./06-rollback.sh
+   # Switch base image to scratch and push
+   git push origin main
    ```
 5. **Observe Recovery:** Disable the fault (`./05-fault-inject.sh disable`). Watch the dashboard return to a healthy green state.
 

@@ -23,8 +23,9 @@ C4Container
     }
     
     System_Boundary(sre, "SRE Automation") {
-        System(logicapp, "Logic App / SRE Agent", "Auto-RCA and remediation orchestrator")
-        System(telegram, "Telegram", "SRE incident notification channel")
+        System(sreagent, "Azure SRE Agent", "AIOps and Auto-RCA orchestrator")
+        System(github_mcp, "GitHub MCP", "Model Context Protocol for code/CI access")
+        System(telegram, "Telegram Bot", "ChatOps notification & interaction channel")
     }
     
     Rel(user, frontend, "HTTPS", "Traffic")
@@ -34,10 +35,10 @@ C4Container
     Rel(backend, law, "JSON", "Logs")
     Rel(appinsights, law, "Export")
     Rel(law, grafana, "KQL", "Queries")
-    Rel(law, alerts, "KQL", "Evaluation")
-    Rel(alerts, logicapp, "Webhook", "Triggers")
-    Rel(logicapp, telegram, "Message", "Notifies")
-    Rel(logicapp, backend, "REST", "Auto-rollback")
+    Rel(law, sreagent, "Native Integration", "Log & Metric Analysis")
+    Rel(sreagent, github_mcp, "MCP", "Reads Code & Actions")
+    Rel(sreagent, telegram, "Webhook/MCP", "Notifies & Converses")
+    Rel(github_mcp, telegram, "CI Actions", "Pushes build failures")
 ```
 
 ## Core Components
@@ -56,10 +57,11 @@ C4Container
 ### 3. Azure Managed Grafana
 - Provides real-time dashboards to visualize the SLIs (Service Level Indicators) like HTTP Error Rates, Request Rates, and P95 Latency percentiles queried directly from the Log Analytics Workspace.
 
-### 4. Azure Monitor Alerts & Telegram Integration
-- **Alert Rule:** Triggers when the HTTP 5xx error rate exceeds 5% in a 5-minute window.
-- **Action Group:** Normally sends an email or triggers a webhook. In our advanced scenario, it triggers the **Azure SRE Agent** (simulated via Webhook/Logic App) which correlates the trace ID back to the source code repository on GitHub.
-- **Notification:** The agent formats an RCA summary and posts it to a Telegram group, providing the exact line of code causing the issue and offering auto-remediation (rollback).
+### 4. Official Azure SRE Agent & Telegram Integration
+- **Azure SRE Agent:** A specialized AI agent deployed via ARM templates with `SRE Agent Administrator` role access. It natively connects to Log Analytics and App Insights to read production telemetry.
+- **GitHub MCP:** The agent uses the Model Context Protocol (MCP) to read repository code, pull requests, and CI/CD logs (e.g., Trivy Security scan failures) directly.
+- **Knowledge Base:** Driven by a custom `docs/sre_runbook.md` to ensure the agent follows strict team SOPs.
+- **Telegram Bot:** Pushes instant notifications for CI/CD failures and provides a ChatOps interface for the SRE team to ask the AI for immediate root cause analysis (Auto-RCA).
 
 ## Telemetry Flow (The "Evidence")
 

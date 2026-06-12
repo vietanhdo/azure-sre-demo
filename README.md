@@ -14,7 +14,7 @@ This project demonstrates the transition from reactive operations to autonomous 
 1. **The Context (Telemetry):** Instrumenting a Go backend using OpenTelemetry and pushing structured JSON logs to Azure Log Analytics Workspace.
 2. **Evidence-Based Canary Deployments:** Splitting traffic (e.g., 80/20) across Azure Container Apps revisions and observing impact.
 3. **Chaos Engineering:** Injecting HTTP 500 errors, latency spikes, and OOM (Out Of Memory) conditions on demand using a dedicated fault injection API.
-4. **Autonomous RCA:** Simulating how Azure SRE Agent correlates trace IDs, application logs, and source code to identify memory leaks and automatically orchestrate a rollback via Telegram notifications.
+4. **Autonomous RCA (Real AI):** Leveraging the official **Azure SRE Agent** (via MCP) connected directly to GitHub and Azure Monitor to analyze CI/CD pipeline failures (e.g., Trivy security blocks) and runtime logs, pushing actionable root cause analysis directly to a **Telegram Bot**.
 
 ## Repository Structure
 
