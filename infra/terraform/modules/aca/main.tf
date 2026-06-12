@@ -157,12 +157,12 @@ resource "azurerm_container_app" "frontend" {
       }
 
       liveness_probe {
-        port      = 80
+        port      = 8080
         transport = "HTTP"
         path      = "/"
       }
       readiness_probe {
-        port      = 80
+        port      = 8080
         transport = "HTTP"
         path      = "/"
       }
