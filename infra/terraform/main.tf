@@ -81,3 +81,12 @@ module "github_oidc" {
   github_repo       = "azure-sre-demo"
   resource_group_id = azurerm_resource_group.main.id
 }
+
+module "sre_agent" {
+  source              = "./modules/sre-agent"
+  name_prefix         = local.name_prefix
+  location            = "koreacentral" # Azure SRE Agent is not available in SEA yet
+  resource_group_name = azurerm_resource_group.main.name
+  admin_user_id       = data.azurerm_client_config.current.object_id
+  tags                = var.tags
+}
