@@ -76,6 +76,7 @@ func main() {
 	mux.HandleFunc("/fault/latency/enable", handlers.EnableLatency)
 	mux.HandleFunc("/fault/latency/disable", handlers.DisableLatency)
 	mux.HandleFunc("/fault/oom", handlers.TriggerOOM)
+	mux.HandleFunc("/fault/cpu", handlers.CPUStress)
 	mux.HandleFunc("/fault/status", handlers.FaultStatus)
 
 	// Swagger handler

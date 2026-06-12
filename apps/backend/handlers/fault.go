@@ -137,3 +137,27 @@ func FaultStatus(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(status)
 }
+
+// CPUStress godoc
+// @Summary Trigger CPU Stress
+// @Description Burns CPU for 1 second to simulate high load
+// @Tags fault
+// @Produce  plain
+// @Success 200 {string} string "CPU Burn completed"
+// @Router /fault/cpu [post]
+func CPUStress(w http.ResponseWriter, r *http.Request) {
+	importTime := "time"
+	_ = importTime
+	// Busy loop to burn CPU
+	done := make(chan bool)
+	go func() {
+		// Burn CPU for 2 seconds
+		for i := 0; i < 500000000; i++ {
+			_ = i * i
+		}
+		done <- true
+	}()
+	<-done
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("CPU Burn completed\n"))
+}

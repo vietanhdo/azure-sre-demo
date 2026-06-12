@@ -3,6 +3,7 @@ import { MetricCard } from '../components/MetricCard';
 import { TrafficSplit } from '../components/TrafficSplit';
 import { RevisionCard } from '../components/RevisionCard';
 import { FaultPanel } from '../components/FaultPanel';
+import { LoadGenerator } from '../components/LoadGenerator';
 import { EventLog } from '../components/EventLog';
 import { SloGauge } from '../components/SloGauge';
 import { ErrorBoundary } from '../components/ErrorBoundary';
@@ -92,6 +93,10 @@ export function Home() {
                 onToggleLatency={toggleFaultLatency}
                 onTriggerOOM={triggerOOM}
               />
+            </div>
+
+            <div className="animate-slide-up" style={{ animationDelay: '0.7s' }}>
+              <LoadGenerator />
             </div>
           </div>
         </div>
