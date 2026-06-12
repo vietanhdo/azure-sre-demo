@@ -65,7 +65,7 @@ module "grafana" {
   resource_group_name = azurerm_resource_group.main.name
   location            = azurerm_resource_group.main.location
   name_prefix         = local.name_prefix
-  law_id              = module.monitoring.law_workspace_id
+  law_id              = module.monitoring.law_id
   admin_user_id       = data.azurerm_client_config.current.object_id
   tags                = var.tags
 }
