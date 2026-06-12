@@ -21,7 +21,7 @@ resource "azurerm_role_assignment" "acr_pull" {
 }
 
 resource "azurerm_container_app" "backend" {
-  name                         = "ca-sre-backend"
+  name                         = "ca-${var.name_prefix}-backend"
   container_app_environment_id = azurerm_container_app_environment.env.id
   resource_group_name          = var.resource_group_name
   revision_mode                = "Multiple"
@@ -63,6 +63,10 @@ resource "azurerm_container_app" "backend" {
       env {
         name  = "ENVIRONMENT"
         value = "demo"
+      }
+      env {
+        name  = "APPLICATIONINSIGHTS_CONNECTION_STRING"
+        value = var.app_insights_connection
       }
       env {
         name = "OTEL_EXPORTER_OTLP_ENDPOINT"

@@ -44,3 +44,27 @@ resource "azurerm_subnet_network_security_group_association" "aca" {
   subnet_id                 = azurerm_subnet.aca.id
   network_security_group_id = azurerm_network_security_group.aca_nsg.id
 }
+
+resource "azurerm_monitor_diagnostic_setting" "vnet" {
+  name                       = "diag-vnet"
+  target_resource_id         = azurerm_virtual_network.vnet.id
+  log_analytics_workspace_id = var.log_analytics_workspace_id
+
+  enabled_log {
+    category_group = "allLogs"
+  }
+
+  enabled_metric {
+    category = "AllMetrics"
+  }
+}
+
+resource "azurerm_monitor_diagnostic_setting" "nsg" {
+  name                       = "diag-nsg"
+  target_resource_id         = azurerm_network_security_group.aca_nsg.id
+  log_analytics_workspace_id = var.log_analytics_workspace_id
+
+  enabled_log {
+    category_group = "allLogs"
+  }
+}

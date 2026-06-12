@@ -1,5 +1,5 @@
 resource "azurerm_log_analytics_workspace" "law" {
-  name                = "law-${var.name_prefix}"
+  name                = "log-${var.name_prefix}"
   location            = var.location
   resource_group_name = var.resource_group_name
   sku                 = "PerGB2018"
@@ -30,7 +30,7 @@ resource "azurerm_monitor_action_group" "sre" {
 
 # Example Alert Rule (SLO Breach)
 resource "azurerm_monitor_metric_alert" "http_5xx" {
-  name                = "alert-${var.name_prefix}-http5xx"
+  name                = "al-${var.name_prefix}-http5xx"
   resource_group_name = var.resource_group_name
   scopes              = [azurerm_application_insights.app_insights.id]
   description         = "Triggers when HTTP 5xx errors exceed threshold"
@@ -38,7 +38,7 @@ resource "azurerm_monitor_metric_alert" "http_5xx" {
   criteria {
     metric_namespace = "microsoft.insights/components"
     metric_name      = "requests/failed"
-    aggregation      = "Total"
+    aggregation      = "Count"
     operator         = "GreaterThan"
     threshold        = 10 # Adjust for demo
   }

@@ -8,6 +8,10 @@ terraform {
       source  = "Azure/azapi"
       version = "~> 2.0"
     }
+    azuread = {
+      source  = "hashicorp/azuread"
+      version = "~> 3.0"
+    }
   }
 }
 
@@ -16,3 +20,6 @@ provider "azurerm" {
 }
 
 provider "azapi" {}
+
+# Required for github-oidc module (App Registration + Service Principal)
+provider "azuread" {}
