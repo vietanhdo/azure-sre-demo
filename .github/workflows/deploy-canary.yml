@@ -35,7 +35,11 @@ jobs:
           REVISION_SUFFIX="canary-${SHORT_SHA}"
           VERSION="${SHORT_SHA}-canary"
           
-          # Deploy new revision
+          # Get stable revision name BEFORE deploying the new one
+          STABLE_REV=$(az containerapp revision list -n ${{ env.BACKEND_APP_NAME }} -g ${{ env.RG_NAME }} --query "[?properties.trafficWeight > \`0\`].name | [0]" -o tsv)
+          STABLE_WEIGHT=$((100 - ${{ github.event.inputs.canary_weight }}))
+          
+          # Deploy new revision (which automatically gets 100% traffic momentarily)
           az containerapp update \
             --name ${{ env.BACKEND_APP_NAME }} \
             --resource-group ${{ env.RG_NAME }} \
@@ -43,10 +47,6 @@ jobs:
             --revision-suffix $REVISION_SUFFIX \
             --set-env-vars APP_VERSION=$VERSION
 
-          # Get stable revision name
-          STABLE_REV=$(az containerapp revision list -n ${{ env.BACKEND_APP_NAME }} -g ${{ env.RG_NAME }} --query "[?properties.trafficWeight > \`0\`].name | [0]" -o tsv)
-          STABLE_WEIGHT=$((100 - ${{ github.event.inputs.canary_weight }}))
-          
           # Set traffic split using revision names
           az containerapp ingress traffic set \
             --name ${{ env.BACKEND_APP_NAME }} \
@@ -63,6 +63,10 @@ jobs:
           REVISION_SUFFIX="canary-${SHORT_SHA}"
           VERSION="${SHORT_SHA}-canary"
           
+          # Get stable revision name BEFORE deploying the new one
+          STABLE_REV=$(az containerapp revision list -n ${{ env.FRONTEND_APP_NAME }} -g ${{ env.RG_NAME }} --query "[?properties.trafficWeight > \`0\`].name | [0]" -o tsv)
+          STABLE_WEIGHT=$((100 - ${{ github.event.inputs.canary_weight }}))
+
           # Deploy new revision
           az containerapp update \
             --name ${{ env.FRONTEND_APP_NAME }} \
@@ -70,10 +74,6 @@ jobs:
             --image ${{ env.ACR_NAME }}.azurecr.io/frontend:${{ github.sha }} \
             --revision-suffix $REVISION_SUFFIX \
             --set-env-vars APP_VERSION=$VERSION
-
-          # Get stable revision name
-          STABLE_REV=$(az containerapp revision list -n ${{ env.FRONTEND_APP_NAME }} -g ${{ env.RG_NAME }} --query "[?properties.trafficWeight > \`0\`].name | [0]" -o tsv)
-          STABLE_WEIGHT=$((100 - ${{ github.event.inputs.canary_weight }}))
           
           # Set traffic split using revision names
           az containerapp ingress traffic set \
