@@ -1,6 +1,8 @@
 # 1. Build stage
 FROM golang:1.25-alpine AS builder
 
+RUN apk add --no-cache ca-certificates
+
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
@@ -24,6 +26,7 @@ RUN go env -w GOMODCACHE=/go/pkg/mod \
 FROM scratch
 
 WORKDIR /
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /app/backend /backend
 
 USER 65532:65532
