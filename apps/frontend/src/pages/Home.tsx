@@ -51,14 +51,6 @@ export function Home() {
           </div>
         </header>
 
-        {/* Top Metrics */}
-        <div className="metrics-grid">
-          {data.metrics.map((metric, idx) => (
-            <div key={metric.label} className="animate-slide-up" style={{ animationDelay: `${idx * 0.1}s` }}>
-              <MetricCard metric={metric} />
-            </div>
-          ))}
-        </div>
 
         {/* Main Content */}
         <div className="main-grid">
